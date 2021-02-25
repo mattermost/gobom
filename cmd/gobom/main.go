@@ -6,13 +6,11 @@ import (
 	"strings"
 
 	"github.com/mattermost/gobom"
-	"github.com/mattermost/gobom/cocoapods"
 	"github.com/mattermost/gobom/cyclonedx"
-	"github.com/mattermost/gobom/gomod"
-	"github.com/mattermost/gobom/gradle"
 	"github.com/mattermost/gobom/log"
-	"github.com/mattermost/gobom/npm"
 	"github.com/spf13/cobra"
+
+	_ "github.com/mattermost/gobom/generators"
 )
 
 func main() {
@@ -39,21 +37,16 @@ func main() {
 				Recurse:              recurse,
 				Properties:           sliceToMap(properties),
 			}
-			availableGenerators := map[string]gobom.Generator{
-				"go":        &gomod.Generator{},
-				"npm":       &npm.Generator{},
-				"cocoapods": &cocoapods.Generator{},
-				"gradle":    &gradle.Generator{},
-			}
-			configuredGenerators := make([]gobom.Generator, 0, len(availableGenerators))
+			availableGenerators := gobom.Generators()
+			configuredGenerators := make(map[string]gobom.Generator)
 			if len(generators) == 0 {
 				// default to running all generators
 				log.Debug("configuring available generators")
-				for _, generator := range availableGenerators {
+				for name, generator := range availableGenerators {
 					if err := generator.Configure(options); err != nil {
-						log.Warn("configuring %s failed: %v", generator.Name(), err)
+						log.Warn("configuring '%s' generator  failed: %v", name, err)
 					} else {
-						configuredGenerators = append(configuredGenerators, generator)
+						configuredGenerators[name] = generator
 					}
 				}
 			} else {
@@ -63,9 +56,9 @@ func main() {
 					generator, ok := availableGenerators[name]
 					if ok {
 						if err := generator.Configure(options); err != nil {
-							log.Warn("configuring %s failed: %v", generator.Name(), err)
+							log.Warn("configuring '%s' generator failed: %v", name, err)
 						} else {
-							configuredGenerators = append(configuredGenerators, generator)
+							configuredGenerators[name] = generator
 						}
 					} else {
 						log.Warn("no such generator: %s", name)
@@ -74,11 +67,11 @@ func main() {
 			}
 
 			boms := make([]*cyclonedx.BOM, 0, len(configuredGenerators))
-			for _, generator := range configuredGenerators {
-				log.Debug("running %s", generator.Name())
+			for name, generator := range configuredGenerators {
+				log.Debug("running '%s' generator", name)
 				bom, err := generator.GenerateBOM(path)
 				if err != nil {
-					log.Warn("%s returned an error: %v", generator.Name(), err)
+					log.Warn("'%s' generator returned an error: %v", name, err)
 				}
 				if bom != nil {
 					boms = append(boms, bom)

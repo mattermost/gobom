@@ -1,4 +1,0 @@
-package testpackage
-
-func main() {
-}
