@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/mattermost/gobom/commands/internal/generate"
+	"github.com/mattermost/gobom/log"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +20,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.PersistentFlags().CountVarP((*int)(&log.LogLevel), "verbose", "v", "enable verbose logging")
 	rootCmd.AddCommand(generate.Command)
 }
 

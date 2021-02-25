@@ -88,7 +88,6 @@ func init() {
 	Command.Flags().BoolVarP(&recurse, "recurse", "r", false, "scan the target path recursively")
 	Command.Flags().StringSliceVarP(&generators, "generators", "g", []string{}, "commma-separated list of generators to run")
 	Command.Flags().StringSliceVarP(&properties, "properties", "p", []string{}, "properties to pass to generators in the form 'Prop1Name=val1,Prop2Name=val2")
-	Command.Flags().CountVarP((*int)(&log.LogLevel), "verbose", "v", "enable verbose logging")
 }
 
 func merge(parts []*cyclonedx.BOM) *cyclonedx.BOM {
