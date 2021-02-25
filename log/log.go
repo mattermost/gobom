@@ -44,7 +44,15 @@ var LogLevel = LevelInfo
 // Log prints a log entry at the specified level
 func Log(level Level, format string, a ...interface{}) {
 	if level <= LogLevel {
-		caller := strings.Split(path.Base(getCaller()), ".")[0]
+		//caller := strings.Split(path.Base(getCaller()), ".")[0]
+		caller := getCaller()
+		pkg := strings.Split(path.Base(caller), ".")[0]
+		dir := path.Base(path.Dir(caller))
+		if dir == "." || dir == "internal" {
+			caller = pkg
+		} else {
+			caller = path.Join(dir, pkg)
+		}
 		fmt.Fprintf(os.Stderr, fmt.Sprintf("%s %s: %s\n", level, caller, format), a...)
 	}
 }
