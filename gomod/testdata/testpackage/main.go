@@ -1,0 +1,4 @@
+package testpackage
+
+func main() {
+}
