@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -118,9 +119,13 @@ func (g *Generator) generateComponentSubtree(name string, pkg *dependency, paren
 	//
 	component := &npmComponent{}
 	component.Type = cyclonedx.Library
-	component.Name = name
+	component.Name = path.Base(name)
+	component.Group = path.Dir(name)
+	if component.Group == "." {
+		component.Group = ""
+	}
 	component.Version = pkg.Version
-	component.PURL = gobom.PURL(gobom.NpmPackage, component.Name, component.Version)
+	component.PURL = gobom.PURL(gobom.NpmPackage, name, component.Version)
 	component.parent = parent
 	component.requires = pkg.Requires
 	if parent == nil {
