@@ -65,7 +65,7 @@ var Command = &cobra.Command{
 
 		boms := make([]*cyclonedx.BOM, 0, len(configuredGenerators))
 		for name, generator := range configuredGenerators {
-			log.Debug("running '%s' generator", name)
+			log.Info("running '%s' generator", name)
 			bom, err := generator.GenerateBOM(path)
 			if err != nil {
 				log.Warn("'%s' generator returned an error: %v", name, err)
