@@ -27,7 +27,7 @@ var Command = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.LogLevel += log.LevelWarn
 
-		path := args[0]
+		path := args[0] // TODO: default to ".", allow specifying multiple paths
 		options := gobom.Options{
 			IncludeSubcomponents: subcomponents,
 			IncludeTests:         tests,

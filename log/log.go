@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // Level represents a log level
@@ -15,17 +16,17 @@ type Level int
 func (l Level) String() string {
 	switch l {
 	case LevelError:
-		return "[ ERROR ]"
+		return "ERROR"
 	case LevelWarn:
-		return "[  WARN ]"
+		return "WARN"
 	case LevelInfo:
-		return "[  INFO ]"
+		return "INFO"
 	case LevelDebug:
-		return "[ DEBUG ]"
+		return "DEBUG"
 	case LevelTrace:
-		return "[ TRACE ]"
+		return "TRACE"
 	default:
-		return "[ TRACE ]"
+		return "TRACE"
 	}
 }
 
@@ -53,7 +54,7 @@ func Log(level Level, format string, a ...interface{}) {
 		} else {
 			caller = path.Join(dir, pkg)
 		}
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("%s %s: %s\n", level, caller, format), a...)
+		fmt.Fprintf(os.Stderr, fmt.Sprintf("[ %s ] [ %5s ] %s: %s\n", time.Now().Format(time.Stamp), level, caller, format), a...)
 	}
 }
 
