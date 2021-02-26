@@ -3,6 +3,8 @@ package generate
 import (
 	"encoding/xml"
 	"fmt"
+	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/mattermost/gobom"
@@ -22,7 +24,7 @@ var (
 // Command .
 var Command = &cobra.Command{
 	Use:   "generate [flags] [path]",
-	Short: "generate software bills of materials for various programming languages and ecosystems",
+	Short: "generate software bills of materials",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		log.LogLevel += log.LevelWarn
@@ -32,15 +34,15 @@ var Command = &cobra.Command{
 			IncludeSubcomponents: subcomponents,
 			IncludeTests:         tests,
 			Recurse:              recurse,
-			Properties:           sliceToMap(properties),
 		}
+		properties := sliceToMap(properties)
 		availableGenerators := gobom.Generators()
 		configuredGenerators := make(map[string]gobom.Generator)
 		if len(generators) == 0 {
 			// default to running all generators
 			log.Debug("configuring available generators")
 			for name, generator := range availableGenerators {
-				if err := generator.Configure(options); err != nil {
+				if err := configure(generator, options, properties); err != nil {
 					log.Warn("configuring '%s' generator  failed: %v", name, err)
 				} else {
 					configuredGenerators[name] = generator
@@ -52,7 +54,7 @@ var Command = &cobra.Command{
 			for _, name := range generators {
 				generator, ok := availableGenerators[name]
 				if ok {
-					if err := generator.Configure(options); err != nil {
+					if err := configure(generator, options, properties); err != nil {
 						log.Warn("configuring '%s' generator failed: %v", name, err)
 					} else {
 						configuredGenerators[name] = generator
@@ -88,6 +90,31 @@ func init() {
 	Command.Flags().BoolVarP(&recurse, "recurse", "r", false, "scan the target path recursively")
 	Command.Flags().StringSliceVarP(&generators, "generators", "g", []string{}, "commma-separated list of generators to run")
 	Command.Flags().StringSliceVarP(&properties, "properties", "p", []string{}, "properties to pass to generators in the form 'Prop1Name=val1,Prop2Name=val2")
+}
+
+func configure(generator gobom.Generator, options gobom.Options, properties map[string]string) error {
+	g := reflect.ValueOf(generator).Elem()
+	t := g.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if prop, exists := properties[field.Name]; exists && field.Tag.Get("gobom") != "" {
+			switch field.Type {
+			case reflect.TypeOf(""):
+				g.Field(i).Set(reflect.ValueOf(prop))
+			case reflect.TypeOf([]string{}):
+				g.Field(i).Set(reflect.ValueOf(strings.Split(prop, ":")))
+			case reflect.TypeOf(regexp.MustCompile("")):
+				pattern, err := regexp.Compile(prop)
+				if err != nil {
+					return err
+				}
+				g.Field(i).Set(reflect.ValueOf(pattern))
+			default:
+				panic(fmt.Sprintf("unsupported property type %s", field.Type))
+			}
+		}
+	}
+	return generator.Configure(options)
 }
 
 func merge(parts []*cyclonedx.BOM) *cyclonedx.BOM {

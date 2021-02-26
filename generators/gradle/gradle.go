@@ -19,8 +19,9 @@ import (
 // Generator generates BOMs for CocoaPods projects
 type Generator struct {
 	options gobom.Options
-	paths   []string
-	exclude *regexp.Regexp
+
+	GradlePath     []string       `gobom:"specifies the path to the Gradle binary"`
+	GradleExcludes *regexp.Regexp `gobom:"regexp of directories to exclude"`
 }
 
 func init() {
@@ -31,19 +32,9 @@ func init() {
 func (g *Generator) Configure(options gobom.Options) error {
 	g.options = options
 
-	if paths, ok := options.Properties["GradlePath"]; ok {
-		g.paths = strings.Split(paths, ":")
-	} else {
+	if len(g.GradlePath) == 0 {
 		// default to not using the wrapper; safe on untrusted code
-		g.paths = []string{"gradle"}
-	}
-
-	if exclude, ok := options.Properties["GradleExcludes"]; ok {
-		var err error
-		g.exclude, err = regexp.Compile(exclude)
-		if err != nil {
-			log.Error("invalid exclude pattern: '%s'", exclude)
-		}
+		g.GradlePath = []string{"gradle"}
 	}
 
 	return nil
@@ -79,7 +70,7 @@ func (g *Generator) generateComponentsRecursively(path string) ([]*cyclonedx.Com
 	for _, info := range infos {
 		if info.IsDir() {
 			next := filepath.Join(path, info.Name())
-			if g.exclude != nil && g.exclude.MatchString(next) {
+			if g.GradleExcludes != nil && g.GradleExcludes.MatchString(next) {
 				log.Debug("skipping '%s'", next)
 				continue
 			}
@@ -196,7 +187,7 @@ func buildDependencyChains(component *gradleComponent, maxDepth int) [][]string 
 }
 
 func (g *Generator) gradle(wd string) (string, error) {
-	for _, path := range g.paths {
+	for _, path := range g.GradlePath {
 		if !filepath.IsAbs(path) && path != filepath.Base(path) {
 			wd, err := filepath.Abs(wd)
 			if err != nil {

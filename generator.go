@@ -18,8 +18,9 @@ type Options struct {
 	IncludeSubcomponents bool
 	IncludeTests         bool
 	Recurse              bool
-	Properties           map[string]string
 }
+
+var registerCallbacks = []func(key string, g Generator){}
 
 var generators = make(map[string]Generator)
 
@@ -32,7 +33,15 @@ func RegisterGenerator(g Generator) bool {
 	key := path.Base(reflect.ValueOf(g).Elem().Type().PkgPath())
 	_, exists := generators[key]
 	generators[key] = g
+	for _, cb := range registerCallbacks {
+		cb(key, g)
+	}
 	return exists
+}
+
+// OnGeneratorRegistered registers a function to be called when a new Generator is added
+func OnGeneratorRegistered(callback func(key string, g Generator)) {
+	registerCallbacks = append(registerCallbacks, callback)
 }
 
 // Generators returns the currently registered Generators as a
