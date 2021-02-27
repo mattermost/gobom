@@ -25,12 +25,9 @@ func init() {
 }
 
 func registerGeneratorHelpTopic(key string, g gobom.Generator) {
-	var (
-		topic       = fmt.Sprintf("generators/%s", key)
-		helpCommand *cobra.Command
-	)
+	var helpCommand *cobra.Command
 	for _, cmd := range rootCmd.Commands() {
-		if cmd.Name() == topic {
+		if cmd.Name() == key {
 			helpCommand = cmd
 		}
 	}
@@ -38,8 +35,8 @@ func registerGeneratorHelpTopic(key string, g gobom.Generator) {
 		helpCommand = &cobra.Command{}
 		rootCmd.AddCommand(helpCommand)
 	}
-	helpCommand.Use = topic
-	helpCommand.Short = fmt.Sprintf("help for the '%s' generator", key)
+	helpCommand.Use = key
+	helpCommand.Short = fmt.Sprintf("help for '%s'", key)
 	helpCommand.Long = buildGeneratorHelpText(key, g)
 }
 
@@ -66,7 +63,7 @@ func buildGeneratorHelpText(key string, g gobom.Generator) string {
 Usage:
   gobom generate -g %s [flags] [-p properties] [path]
 
-%s`, key, key, propHelp)
+%s`, gobom.ResolveShortName(g), key, propHelp)
 }
 
 // Execute runs the root command

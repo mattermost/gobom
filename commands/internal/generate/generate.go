@@ -36,14 +36,14 @@ var Command = &cobra.Command{
 			Recurse:              recurse,
 		}
 		properties := sliceToMap(properties)
-		availableGenerators := gobom.Generators()
 		configuredGenerators := make(map[string]gobom.Generator)
 		if len(generators) == 0 {
 			// default to running all generators
 			log.Debug("configuring available generators")
+			availableGenerators := gobom.Generators()
 			for name, generator := range availableGenerators {
 				if err := configure(generator, options, properties); err != nil {
-					log.Warn("configuring '%s' generator  failed: %v", name, err)
+					log.Warn("configuring '%s'  failed: %v", name, err)
 				} else {
 					configuredGenerators[name] = generator
 				}
@@ -52,15 +52,15 @@ var Command = &cobra.Command{
 			// run only specific generators
 			log.Debug("configuring generators: %s", strings.Join(generators, ", "))
 			for _, name := range generators {
-				generator, ok := availableGenerators[name]
-				if ok {
+				generator, err := gobom.GetGenerator(name)
+				if err == nil {
 					if err := configure(generator, options, properties); err != nil {
 						log.Warn("configuring '%s' generator failed: %v", name, err)
 					} else {
 						configuredGenerators[name] = generator
 					}
 				} else {
-					log.Warn("no such generator: %s", name)
+					log.Warn(err.Error())
 				}
 			}
 		}
