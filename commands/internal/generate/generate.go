@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"reflect"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/mattermost/gobom"
+	"github.com/mattermost/gobom/commands/internal/upload"
 	"github.com/mattermost/gobom/cyclonedx"
 	"github.com/mattermost/gobom/log"
 	"github.com/spf13/cobra"
@@ -79,8 +81,18 @@ var Command = &cobra.Command{
 
 		log.Debug("meging and marshaling BOMs")
 
-		out, _ := xml.Marshal(merge(boms))
-		fmt.Println(xml.Header + string(out))
+		if cmd.Flag("url").Value.String() != "" {
+			// suppress output and upload directly to Dependency-Track
+			buffer := &bytes.Buffer{}
+			buffer.WriteString(xml.Header)
+			encoder := xml.NewEncoder(buffer)
+			encoder.Encode(merge(boms))
+			upload.Upload(buffer)
+		} else {
+			// no upload, just print to stdout
+			out, _ := xml.Marshal(merge(boms))
+			fmt.Println(xml.Header + string(out))
+		}
 	},
 }
 
@@ -90,6 +102,9 @@ func init() {
 	Command.Flags().BoolVarP(&recurse, "recurse", "r", false, "scan the target path recursively")
 	Command.Flags().StringSliceVarP(&generators, "generators", "g", []string{}, "commma-separated list of generators to run")
 	Command.Flags().StringSliceVarP(&properties, "properties", "p", []string{}, "properties to pass to generators in the form 'Prop1Name=val1,Prop2Name=val2")
+
+	// inherit flags from the upload command
+	Command.Flags().AddFlagSet(upload.Command.Flags())
 }
 
 func configure(generator gobom.Generator, options gobom.Options, properties map[string]string) error {
