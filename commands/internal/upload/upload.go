@@ -1,18 +1,14 @@
 package upload
 
 import (
-	"bytes"
 	"io"
-	"io/ioutil"
-	"mime/multipart"
-	"net/http"
-	"net/url"
 	"os"
-	"path"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/mattermost/gobom/dt"
 	"github.com/mattermost/gobom/log"
 )
 
@@ -45,54 +41,67 @@ var Command = &cobra.Command{
 
 // Upload .
 func Upload(file io.Reader) {
-	bomURL, err := url.Parse(api)
+	client, err := dt.NewClient(api, key)
 	if err != nil {
-		log.Error("bad url: %v", err)
-		return
-	} else if bomURL.Scheme == "" {
-		log.Error("bad url: no scheme specified")
+		log.Error("%v", err)
 		return
 	}
-	bomURL.Path = path.Join(bomURL.Path, "api/v1/bom")
-	log.Debug("using BOM upload URL '%s'", bomURL.String())
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
+	// the version check is unauthenticated; if it fails, the user probably
+	// typoed the URL, but because we fail there, the API token doesn't get
+	// sent to the wrong server
+	version, err := client.Version()
+	if err != nil {
+		log.Error("failed to check server version: %s", err)
+		return
+	}
+	log.Debug("server version is %s", version)
+
+	p1, err := getProject(client, project)
+	if err != nil {
+		log.Error("project lookup failed: %v", err)
+		return
+	}
+	log.Debug("last BOM import: %s", time.Unix(p1.LastBomImport/1000, 0).Format(time.Stamp))
+	token, err := uploadBOM(client, file, project)
+	if err != nil {
+		log.Error("%v", err)
+		return
+	}
+	log.Debug("received upload token: '%s'", token)
+
+	// did the project already get updated?
+	for i := 0; i < 10; i++ {
+		time.Sleep(time.Second)
+		log.Debug("polling project status")
+		p2, err := getProject(client, project)
+		if err != nil {
+			log.Error("project lookup failed: %v", err)
+			return
+		}
+		if p2 != nil && (p1 == nil || p1.LastBomImport != p2.LastBomImport) {
+			log.Info("BOM successfully uploaded on %s", time.Unix(p2.LastBomImport/1000, 0).Format(time.Stamp))
+			return
+		}
+	}
+
+	log.Error("upload was successful but project was not updated; check server logs for more info")
+}
+
+func uploadBOM(client *dt.Client, file io.Reader, project string) (string, error) {
 	if strings.Contains(project, "@") {
 		project := strings.SplitN(project, "@", 2)
-		writer.WriteField("projectName", project[0])
-		writer.WriteField("projectVersion", project[1])
-	} else {
-		writer.WriteField("project", project)
+		return client.Upload(file, project[0], project[1], "")
 	}
-	writer.WriteField("autoCreate", "true")
+	return client.Upload(file, "", "", project)
+}
 
-	bom, _ := writer.CreateFormFile("bom", "bom.xml")
-	io.Copy(bom, file)
-
-	writer.Close()
-
-	request, err := http.NewRequest(http.MethodPost, bomURL.String(), body)
-	if err != nil {
-		log.Error("error uploading BOM: %v", err)
-		return
+func getProject(client *dt.Client, project string) (*dt.Project, error) {
+	if strings.Contains(project, "@") {
+		project := strings.SplitN(project, "@", 2)
+		return client.Lookup(project[0], project[1])
 	}
-	request.Header.Set("Content-Type", writer.FormDataContentType())
-	request.Header.Set("X-Api-Key", key)
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		log.Error("error uploading BOM: %v", err)
-	}
-	result, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Error("error reading response from server")
-		return
-	}
-	if response.StatusCode > 299 {
-		log.Error("error response from server: %s\n%s", response.Status, string(result))
-		return
-	}
-	log.Info("BOM successfully uploaded")
+	return client.GetProject(project)
 }
 
 func init() {
