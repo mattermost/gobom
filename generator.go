@@ -36,7 +36,6 @@ func ResolveShortName(g Generator) string {
 // Options controls various configurable aspects of BOM generation
 type Options struct {
 	IncludeSubcomponents bool
-	IncludeTests         bool
 	Recurse              bool
 }
 
