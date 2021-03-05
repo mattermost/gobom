@@ -14,6 +14,8 @@ import (
 // Generator generates BOMs for Go modules projects
 type Generator struct {
 	options gobom.Options
+
+	GomodTests bool `gobom:"set to true to include test-only dependencies"`
 }
 
 func init() {
@@ -54,7 +56,7 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 	packages := make([]*cyclonedx.Component, 0)
 
 	args := []string{"list", "-mod", "readonly", "-deps", "-json"}
-	if g.options.IncludeTests {
+	if g.GomodTests {
 		args = append(args, "-test")
 	}
 	if g.options.Recurse {
