@@ -16,10 +16,9 @@ import (
 )
 
 var (
-	subcomponents bool
-	recurse       bool
-	generators    []string
-	properties    []string
+	recurse    bool
+	generators []string
+	properties []string
 )
 
 // Command .
@@ -32,8 +31,7 @@ var Command = &cobra.Command{
 
 		path := args[0] // TODO: default to ".", allow specifying multiple paths
 		options := gobom.Options{
-			IncludeSubcomponents: subcomponents,
-			Recurse:              recurse,
+			Recurse: recurse,
 		}
 		properties := sliceToMap(properties)
 		configuredGenerators := make(map[string]gobom.Generator)
@@ -95,7 +93,6 @@ var Command = &cobra.Command{
 }
 
 func init() {
-	Command.Flags().BoolVarP(&subcomponents, "subcomponents", "s", false, "include subcomponents in the output")
 	Command.Flags().BoolVarP(&recurse, "recurse", "r", false, "scan the target path recursively")
 	Command.Flags().StringSliceVarP(&generators, "generators", "g", []string{}, "commma-separated list of generators to run")
 	Command.Flags().StringSliceVarP(&properties, "properties", "p", []string{}, "properties to pass to generators in the form 'Prop1Name=val1,Prop2Name=val2")

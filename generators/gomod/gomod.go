@@ -15,7 +15,8 @@ import (
 type Generator struct {
 	options gobom.Options
 
-	GomodTests bool `gobom:"set to true to include test-only dependencies"`
+	GomodTests    bool `gobom:"set to true to include test-only dependencies"`
+	GomodPackages bool `gobom:"set to true to include packages as subcomponents in the BOM"`
 }
 
 func init() {
@@ -43,7 +44,7 @@ func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 		return nil, err
 	}
 
-	if !g.options.IncludeSubcomponents {
+	if !g.GomodPackages {
 		for _, module := range modules {
 			module.Components = nil
 		}

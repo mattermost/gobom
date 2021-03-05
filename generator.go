@@ -35,8 +35,8 @@ func ResolveShortName(g Generator) string {
 
 // Options controls various configurable aspects of BOM generation
 type Options struct {
-	IncludeSubcomponents bool
-	Recurse              bool
+	Recurse bool
+	// TODO: add a global Excludes option
 }
 
 var registerCallbacks = []func(key string, g Generator){}
