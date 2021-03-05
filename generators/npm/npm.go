@@ -15,6 +15,8 @@ import (
 // Generator generates BOMs for npm projects
 type Generator struct {
 	options gobom.Options
+
+	NpmDevDependencies bool `gobom:"set to true to include devDependencies"`
 }
 
 func init() {
@@ -135,7 +137,7 @@ func (g *Generator) generateComponentSubtree(name string, pkg *dependency, paren
 	// generate npmComponents for all installed dependencies
 	component.installed = make(map[string]*npmComponent)
 	for name, info := range pkg.Dependencies {
-		if g.options.IncludeTests || !info.Dev {
+		if g.NpmDevDependencies || !info.Dev {
 			component.installed[name] = g.generateComponentSubtree(name, info, component)
 		}
 	}

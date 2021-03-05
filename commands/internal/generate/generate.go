@@ -114,6 +114,15 @@ func configure(generator gobom.Generator, options gobom.Options, properties map[
 		field := t.Field(i)
 		if prop, exists := properties[field.Name]; exists && field.Tag.Get("gobom") != "" {
 			switch field.Type {
+			case reflect.TypeOf(true):
+				switch prop {
+				case "true":
+					g.Field(i).Set(reflect.ValueOf(true))
+				case "false":
+					g.Field(i).Set(reflect.ValueOf(false))
+				default:
+					return fmt.Errorf("unsupported boolean value '%s'", prop)
+				}
 			case reflect.TypeOf(""):
 				g.Field(i).Set(reflect.ValueOf(prop))
 			case reflect.TypeOf([]string{}):
