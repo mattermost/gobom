@@ -16,6 +16,7 @@ var (
 	api     string
 	key     string
 	project string
+	timeout uint
 )
 
 // Command .
@@ -69,9 +70,10 @@ func Upload(file io.Reader) {
 		return
 	}
 	log.Debug("received upload token: '%s'", token)
+	log.Info("upload successful, checking project status")
 
 	// did the project already get updated?
-	for i := 0; i < 10; i++ {
+	for i := uint(0); i < timeout; i++ {
 		time.Sleep(time.Second)
 		log.Debug("polling project status")
 		p2, err := getProject(client, project)
@@ -85,7 +87,7 @@ func Upload(file io.Reader) {
 		}
 	}
 
-	log.Error("upload was successful but project was not updated; check server logs for more info")
+	log.Warn("upload was successful but project was not updated; check server logs for more info")
 }
 
 func uploadBOM(client *dt.Client, file io.Reader, project string) (string, error) {
@@ -108,4 +110,5 @@ func init() {
 	Command.Flags().StringVarP(&api, "url", "u", "", "Dependency-Track API server URL")
 	Command.Flags().StringVarP(&key, "key", "k", "", "Dependency-Track API key")
 	Command.Flags().StringVarP(&project, "project", "P", "", "Dependency-Track project in the form of an UUID or 'name@version'")
+	Command.Flags().UintVarP(&timeout, "server-timeout", "T", 20, "max time in seconds to wait for the server to update after receiving a BOM")
 }
