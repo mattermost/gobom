@@ -9,11 +9,12 @@ import (
 func TestGenerateBom(t *testing.T) {
 	generator := Generator{}
 
+	generator.GomodPackages = true
+	generator.GomodTests = true
 	generator.Configure(gobom.Options{
-		IncludeSubcomponents: true,
-		IncludeTests:         true,
-		Recurse:              true,
+		Recurse: true,
 	})
+
 	bom, err := generator.GenerateBOM("./testdata/testpackage")
 	if err != nil {
 		t.Fatalf("GenerateBOM failed: %v", err)
@@ -24,14 +25,14 @@ func TestGenerateBom(t *testing.T) {
 	if len(bom.Components[0].Components) != 1 {
 		t.Fatal("Component should contain exactly one subcomponent")
 	}
-	if bom.Components[0].Components[0].Name != "github.com/mattermost/gobom/gomod/testdata/testpackage" {
-		t.Fatalf("unexpected package name '%s'", bom.Components[0].Name)
+	if bom.Components[0].Components[0].Name != "github.com/mattermost/gobom/generators/gomod/testdata/testpackage" {
+		t.Fatalf("unexpected package name '%s'", bom.Components[0].Components[0].Name)
 	}
 
+	generator.GomodPackages = false
+	generator.GomodTests = true
 	generator.Configure(gobom.Options{
-		IncludeSubcomponents: false,
-		IncludeTests:         true,
-		Recurse:              true,
+		Recurse: true,
 	})
 	bom, err = generator.GenerateBOM("./testdata/testpackage")
 	if err != nil {
