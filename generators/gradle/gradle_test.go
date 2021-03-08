@@ -37,7 +37,7 @@ func TestParseDependency(t *testing.T) {
 	for value, expected := range values {
 		dependency := dependency{value: value + "\n"}
 		parsed := dependency.Parse()
-		if fmt.Sprintf("%t|%s|%s|%s|%t", parsed.Project, parsed.Group, parsed.Name, parsed.Version, parsed.Resolved) != expected {
+		if fmt.Sprintf("%t|%s|%s|%s|%t", parsed.project, parsed.Group, parsed.Name, parsed.Version, parsed.resolved) != expected {
 			t.Errorf("unexpected parser output for dependency '%s': '%v'", value, dependency.Parse())
 		}
 	}
