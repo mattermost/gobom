@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
+
+	"github.com/mattermost/gobom"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -40,5 +42,39 @@ func TestParseDependency(t *testing.T) {
 		if fmt.Sprintf("%t|%s|%s|%s|%t", parsed.project, parsed.Group, parsed.Name, parsed.Version, parsed.resolved) != expected {
 			t.Errorf("unexpected parser output for dependency '%s': '%v'", value, dependency.Parse())
 		}
+	}
+}
+
+func TestGenerateBOM(t *testing.T) {
+	g := Generator{}
+	g.Configure(gobom.Options{Recurse: true})
+	g.GradlePath = []string{"./gradlew"}
+
+	bom, err := g.GenerateBOM("./testdata/testproject")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	found := 0
+	expected := map[string]string{
+		"compileClasspath":     "",
+		"runtimeClasspath":     "",
+		"testCompileClasspath": "",
+		"testRuntimeClasspath": "",
+		"joda-time":            "pkg:maven/joda-time/joda-time@2.2",
+		"junit":                "pkg:maven/junit/junit@4.12",
+		"hamcrest-core":        "pkg:maven/org.hamcrest/hamcrest-core@1.3",
+	}
+	for _, component := range bom.Components {
+		if purl, ok := expected[component.Name]; ok && purl == component.PURL {
+			found++
+		} else if ok && purl != component.PURL {
+			t.Errorf("unexpected purl: expected '%s', saw '%s'", purl, component.PURL)
+		} else {
+			t.Errorf("unexpected component: '%s'", component.Name)
+		}
+	}
+	if found != len(expected) {
+		t.Errorf("expected %d components, saw %d", len(expected), found)
 	}
 }
