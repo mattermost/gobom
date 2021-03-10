@@ -1,0 +1,8 @@
+platform :ios, '8.0'
+use_frameworks!
+install! 'cocoapods', :integrate_targets => false
+
+target 'MyApp' do
+  pod 'AFNetworking', '~> 2.6'
+  pod 'ORStackView', '~> 3.0'
+end
