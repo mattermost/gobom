@@ -9,6 +9,7 @@ import (
 
 	"github.com/mattermost/gobom"
 	"github.com/mattermost/gobom/cyclonedx"
+	"github.com/mattermost/gobom/log"
 )
 
 // Generator generates BOMs for Go modules projects
@@ -56,6 +57,8 @@ func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 	packages := make([]*cyclonedx.Component, 0)
 
+	log.Info("listing package dependencies in '%s'", path)
+
 	args := []string{"list", "-mod", "readonly", "-deps", "-json"}
 	if g.GomodTests {
 		args = append(args, "-test")
@@ -70,6 +73,8 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 	if err != nil {
 		return nil, fmt.Errorf("go list: %v", err)
 	}
+	stderr := &bytes.Buffer{}
+	cmd.Stderr = stderr
 	cmd.Start()
 	decoder := json.NewDecoder(stdout)
 	for decoder.More() {
@@ -81,12 +86,15 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 		packages = append(packages, pkg.toComponents()...)
 	}
 	if err := cmd.Wait(); err != nil {
+		log.Error("'go list' failed with error message:\n\n%s", string(stderr.Bytes()))
 		return nil, fmt.Errorf("go list: %v", err)
 	}
 	return packages, nil
 }
 
 func resolveGoVersion(modules []*cyclonedx.Component) error {
+	log.Debug("resolving Go version")
+
 	cmd := exec.Command("go", "version")
 	out, err := cmd.Output()
 	if err != nil {
@@ -98,6 +106,7 @@ func resolveGoVersion(modules []*cyclonedx.Component) error {
 		return err
 	}
 	version := fmt.Sprintf("%d.%d.%d", major, minor, patch)
+	log.Trace("local Go version is %s", version)
 	for _, module := range modules {
 		if module.Name == "github.com/golang/go" && module.Version == "unknown" {
 			module.Version = version
@@ -109,6 +118,8 @@ func resolveGoVersion(modules []*cyclonedx.Component) error {
 }
 
 func resolveWhy(path string, modules []*cyclonedx.Component) error {
+	log.Debug("resolving 'why' for all modules")
+
 	cmd := exec.Command("go", "mod", "why", "-m", "all")
 	cmd.Dir = path
 	why, err := cmd.Output()
