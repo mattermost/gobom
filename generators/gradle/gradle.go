@@ -20,8 +20,10 @@ import (
 type Generator struct {
 	options gobom.Options
 
-	GradlePath     []string       `gobom:"specifies the path to the Gradle binary"`
-	GradleExcludes *regexp.Regexp `gobom:"regexp of directories to exclude"`
+	GradlePath           []string       `gobom:"specifies the path to the Gradle binary"`
+	GradleExcludes       *regexp.Regexp `gobom:"regexp of directories to exclude"`
+	GradleConfigs        *regexp.Regexp `gobom:"regexp of configurations to include"`
+	GradleConfigExcludes *regexp.Regexp `gobom:"regexp of configurations to exclude"`
 }
 
 func init() {
@@ -98,6 +100,11 @@ func (g *Generator) generateComponents(path string) ([]*cyclonedx.Component, err
 	log.Debug("parsing dependency hierarchy")
 	components := map[string]*gradleComponent{}
 	for _, config := range configs {
+		if (g.GradleConfigs != nil && !g.GradleConfigs.MatchString(config.Name())) ||
+			(g.GradleExcludes != nil && g.GradleConfigExcludes.MatchString(config.Name())) {
+			log.Trace("skipping config '%s'", config.Name())
+			continue
+		}
 		config.Walk(func(dependency, dependant *dependency) {
 			parsed := dependency.Parse()
 			if parsed.resolved {
