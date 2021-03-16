@@ -8,6 +8,7 @@ import (
 
 	"github.com/mattermost/gobom"
 	"github.com/mattermost/gobom/cyclonedx"
+	"github.com/mattermost/gobom/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -68,6 +69,7 @@ func generateComponents(path string) ([]*cyclonedx.Component, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Info("read 'Podfile.lock' in '%s'", path)
 	components := map[string]*podComponent{}
 	root := &podComponent{}
 	root.Type = cyclonedx.Library
