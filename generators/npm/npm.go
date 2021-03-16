@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattermost/gobom"
 	"github.com/mattermost/gobom/cyclonedx"
+	"github.com/mattermost/gobom/log"
 )
 
 // Generator generates BOMs for npm projects
@@ -171,7 +172,11 @@ func readLockfile(path string) (*lockfile, error) {
 		data, err = ioutil.ReadFile(filepath.Join(path, "npm-shrinkwrap.json"))
 		if err != nil {
 			return nil, err
+		} else {
+			log.Info("read 'npm-shrinkwrap.json' in '%s'", path)
 		}
+	} else {
+		log.Info("read 'package-lock.json' in '%s'", path)
 	}
 	lockfile := &lockfile{}
 	err = json.Unmarshal(data, lockfile)
@@ -188,6 +193,7 @@ func readLockfile(path string) (*lockfile, error) {
 	// read package.json if available
 	data, err = ioutil.ReadFile(filepath.Join(path, "package.json"))
 	if err == nil {
+		log.Trace("read 'package.json' in '%s'", path)
 		json.Unmarshal(data, &lockfile.manifest)
 	}
 
@@ -205,6 +211,7 @@ func readLockfiles(path string) (map[string]*lockfile, error) {
 	for _, info := range infos {
 		if info.IsDir() {
 			if info.Name() == "node_modules" {
+				log.Debug("skipping 'node_modules' directory in '%s'", path)
 				continue
 			}
 			lockfiles2, err := readLockfiles(filepath.Join(path, info.Name()))
