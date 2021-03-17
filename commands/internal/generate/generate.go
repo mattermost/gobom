@@ -17,6 +17,8 @@ import (
 
 var (
 	recurse    bool
+	excludes   string
+	filters    []string
 	generators []string
 	properties []string
 )
@@ -27,11 +29,25 @@ var Command = &cobra.Command{
 	Short: "generate software bills of materials",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		log.LogLevel += log.LevelWarn
+		var (
+			excludeRE *regexp.Regexp
+			err       error
+		)
 
+		log.LogLevel += log.LevelWarn
 		path := args[0] // TODO: default to ".", allow specifying multiple paths
+
+		if excludes != "" {
+			excludeRE, err = regexp.Compile(excludes)
+		}
+		if err != nil {
+			log.Error("excludes value is not a regular expression: %v", err)
+			return
+		}
 		options := gobom.Options{
-			Recurse: recurse,
+			Recurse:  recurse,
+			Excludes: excludeRE,
+			Filters:  filters,
 		}
 		properties := sliceToMap(properties)
 		configuredGenerators := make(map[string]gobom.Generator)
@@ -94,6 +110,8 @@ var Command = &cobra.Command{
 
 func init() {
 	Command.Flags().BoolVarP(&recurse, "recurse", "r", false, "scan the target path recursively")
+	Command.Flags().StringVarP(&excludes, "excludes", "x", "", "regexp of paths to exclude in recursive mode")
+	Command.Flags().StringSliceVarP(&filters, "filters", "f", []string{}, "filtering presets to pass to generators, e.g. 'release' or 'test'")
 	Command.Flags().StringSliceVarP(&generators, "generators", "g", []string{}, "commma-separated list of generators to run")
 	Command.Flags().StringSliceVarP(&properties, "properties", "p", []string{}, "properties to pass to generators in the form 'Prop1Name=val1,Prop2Name=val2")
 

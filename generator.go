@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/mattermost/gobom/cyclonedx"
@@ -35,8 +36,28 @@ func ResolveShortName(g Generator) string {
 
 // Options controls various configurable aspects of BOM generation
 type Options struct {
+	// Recurse tells a Generator to run in recursive mode,
+	// walking all subdirectories and generating components
+	// for every applicable path it sees.
 	Recurse bool
-	// TODO: add a global Excludes option
+
+	// Excludes tells a Generator to exclude the specified
+	// paths when running in recursive mode. This is a global
+	// option; a Generator may also expose a scoped excludes
+	// option as a property. If both are specified, both should
+	// be applied.
+	Excludes *regexp.Regexp
+
+	// Filters specifies the filtering presets to pass to the
+	// Generator.
+	//
+	// Default presets include 'release' and 'test',
+	// and should be implemented by all Generators. The 'release'
+	// preset should configure the Generator to include only
+	// production dependencies in its output; the 'test' preset
+	// should configure the output to include only non-production
+	// dependencies.
+	Filters []string
 }
 
 var registerCallbacks = []func(key string, g Generator){}
