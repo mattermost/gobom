@@ -14,19 +14,33 @@ import (
 
 // Generator generates BOMs for Go modules projects
 type Generator struct {
-	options gobom.Options
+	GomodTests     bool `gobom:"set to false to exclude test-only dependencies; defaults to true"`
+	GomodTestsOnly bool `gobom:"set to true to exclude production dependecies"`
+	GomodPackages  bool `gobom:"set to true to include packages as subcomponents in the BOM"`
 
-	GomodTests    bool `gobom:"set to true to include test-only dependencies"`
-	GomodPackages bool `gobom:"set to true to include packages as subcomponents in the BOM"`
+	recurse bool
 }
 
 func init() {
-	gobom.RegisterGenerator(&Generator{})
+	gobom.RegisterGenerator(&Generator{
+		GomodTests:     true,
+		GomodTestsOnly: false,
+		GomodPackages:  false,
+	})
 }
 
 // Configure sets the options for this Generator
 func (g *Generator) Configure(options gobom.Options) error {
-	g.options = options
+	g.recurse = options.Recurse
+
+	filters := make(map[string]bool)
+	for _, name := range options.Filters {
+		filters[name] = true
+	}
+
+	g.GomodTestsOnly = g.GomodTestsOnly || (filters["test"] && !filters["release"])
+	g.GomodTests = g.GomodTests && (!filters["release"] || filters["test"])
+
 	return nil
 }
 
@@ -51,6 +65,29 @@ func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 		}
 	}
 
+	if g.GomodTestsOnly {
+		log.Info("rerunning generator with GomodTests=false")
+		g2 := &Generator{}
+		*g2 = *g
+		g2.GomodTestsOnly = false
+		g2.GomodTests = false
+		bom, err := g2.GenerateBOM(path)
+		if err != nil {
+			return nil, err
+		}
+		releaseDeps := make(map[string]bool)
+		for _, component := range bom.Components {
+			releaseDeps[component.PURL] = true
+		}
+		testDeps := make([]*cyclonedx.Component, 0, len(modules))
+		for _, component := range modules {
+			if !releaseDeps[component.PURL] {
+				testDeps = append(testDeps, component)
+			}
+		}
+		return &cyclonedx.BOM{Components: testDeps}, nil
+	}
+
 	return &cyclonedx.BOM{Components: modules}, nil
 }
 
@@ -63,7 +100,7 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 	if g.GomodTests {
 		args = append(args, "-test")
 	}
-	if g.options.Recurse {
+	if g.recurse {
 		args = append(args, "./...")
 	}
 

@@ -2,6 +2,7 @@ package gomod
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mattermost/gobom"
 	"github.com/mattermost/gobom/cyclonedx"
@@ -15,6 +16,8 @@ type module struct {
 
 type pkg struct {
 	ImportPath string
+	Name       string
+	ForTest    string
 	Module     *module
 	Standard   bool
 }
@@ -44,6 +47,9 @@ func (p pkg) toComponents() []*cyclonedx.Component {
 	} else {
 		if p.Standard {
 			components[0].Group = "github.com/golang/go"
+		} else if p.ForTest != "" || (p.Name == "main" && strings.HasSuffix(p.ImportPath, ".test")) {
+			// this is a test package or a generated test main from the build cache; ignore
+			return []*cyclonedx.Component{}
 		}
 		components[0].Version = "unknown"
 	}

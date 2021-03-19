@@ -10,10 +10,16 @@ func TestGenerateBom(t *testing.T) {
 	generator := Generator{}
 
 	generator.GomodPackages = true
-	generator.GomodTests = true
+	generator.GomodTests = false
 	generator.Configure(gobom.Options{
 		Recurse: true,
 	})
+	if !generator.GomodPackages {
+		t.Fatal("GomodPackages should be true after Configure")
+	}
+	if generator.GomodTests {
+		t.Fatal("GomodTests should be false after Configure")
+	}
 
 	bom, err := generator.GenerateBOM("./testdata/testpackage")
 	if err != nil {
@@ -30,7 +36,7 @@ func TestGenerateBom(t *testing.T) {
 	}
 
 	generator.GomodPackages = false
-	generator.GomodTests = true
+	generator.GomodTests = false
 	generator.Configure(gobom.Options{
 		Recurse: true,
 	})
@@ -45,6 +51,45 @@ func TestGenerateBom(t *testing.T) {
 		t.Fatal("Component should not contain any subcomponents")
 	}
 	if bom.Components[0].Name != "github.com/mattermost/gobom" {
+		t.Fatalf("unexpected module name '%s'", bom.Components[0].Name)
+	}
+
+	generator.GomodPackages = false
+	generator.GomodTests = true
+	generator.Configure(gobom.Options{
+		Recurse: true,
+	})
+	bom, err = generator.GenerateBOM("./testdata/testpackage")
+	if err != nil {
+		t.Fatalf("GenerateBOM failed: %v", err)
+	}
+	if len(bom.Components) != 2 {
+		t.Fatalf("BOM should contain exactly 2 Components, saw %d", len(bom.Components))
+	}
+	if (bom.Components[0].Name != "github.com/mattermost/gobom" || bom.Components[1].Name != "github.com/golang/go") &&
+		(bom.Components[1].Name != "github.com/mattermost/gobom" || bom.Components[0].Name != "github.com/golang/go") {
+		t.Fatalf("unexpected module names in BOM")
+	}
+
+	generator.GomodPackages = false
+	generator.GomodTestsOnly = true
+	generator.Configure(gobom.Options{
+		Recurse: true,
+	})
+	if !generator.GomodTestsOnly {
+		t.Fatal("GomodTestsOnly should be true after Configure")
+	}
+	bom, err = generator.GenerateBOM("./testdata/testpackage")
+	if err != nil {
+		t.Fatalf("GenerateBOM failed: %v", err)
+	}
+	if len(bom.Components) != 1 {
+		for _, c := range bom.Components {
+			t.Error(c.PURL)
+		}
+		t.Fatalf("BOM should contain exactly one Component, saw %d", len(bom.Components))
+	}
+	if bom.Components[0].Name != "github.com/golang/go" {
 		t.Fatalf("unexpected module name '%s'", bom.Components[0].Name)
 	}
 }
