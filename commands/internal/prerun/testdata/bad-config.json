@@ -1,0 +1,13 @@
+{
+    "recurse": true,
+    "properties": {
+        "GradlePath": "./gradlew:../gradlew",
+        "GradleExcludes": "node_modules"
+    },
+    "excludes": ".git",
+    "filters": [
+        "release",
+        "test"
+    ],
+    "this flag doesn't exist": true
+}

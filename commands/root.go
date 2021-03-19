@@ -2,22 +2,34 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 
 	"github.com/mattermost/gobom"
 	"github.com/mattermost/gobom/commands/internal/generate"
+	"github.com/mattermost/gobom/commands/internal/prerun"
 	"github.com/mattermost/gobom/commands/internal/upload"
 	"github.com/mattermost/gobom/log"
 	"github.com/spf13/cobra"
 )
 
+var config string
+
 var rootCmd = &cobra.Command{
 	Use:   "gobom [command]",
 	Short: "generate software bills of materials",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if config != "" {
+			if !prerun.Configure(config, cmd) {
+				os.Exit(1)
+			}
+		}
+	},
 }
 
 func init() {
 	rootCmd.PersistentFlags().CountVarP((*int)(&log.LogLevel), "verbose", "v", "enable verbose logging")
+	rootCmd.PersistentFlags().StringVarP(&config, "config", "c", "", "read flags from a JSON config file")
 	rootCmd.AddCommand(generate.Command)
 	rootCmd.AddCommand(upload.Command)
 
