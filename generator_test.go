@@ -1,6 +1,7 @@
 package gobom_test
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -8,9 +9,18 @@ import (
 	"github.com/mattermost/gobom/cyclonedx"
 )
 
-type TestGenerator struct{}
+type ParentGenerator struct {
+	TestGeneratorProperty      string `gobom:"in parent"`
+	TestGeneratorOtherProperty string `gobom:"in parent"`
+}
 
-func (*TestGenerator) Configure(gobom.Options) error {
+type TestGenerator struct {
+	ParentGenerator
+
+	TestGeneratorProperty string `gobom:"in generator"`
+}
+
+func (*TestGenerator) Configure() error {
 	return nil
 }
 
@@ -85,5 +95,38 @@ func TestGetGenerator(t *testing.T) {
 	}
 	if g != nil {
 		t.Errorf("expected nil generator, saw %v", g)
+	}
+}
+
+func TestVisitProperties(t *testing.T) {
+	visitedPropertyInParent := 0
+	visitedPropertyInGenerator := 0
+	visitedOtherPropertyInParent := 0
+	gobom.VisitProperties(&TestGenerator{}, func(field reflect.StructField, value reflect.Value) {
+		switch field.Name {
+		case "TestGeneratorProperty":
+			switch field.Tag.Get("gobom") {
+			case "in parent":
+				visitedPropertyInParent++
+			case "in generator":
+				visitedPropertyInGenerator++
+			default:
+				t.Fatalf("unexpected tag value: %s", field.Tag.Get("gobom"))
+			}
+		case "TestGeneratorOtherProperty":
+			if tag := field.Tag.Get("gobom"); tag != "in parent" {
+				t.Fatalf("unexpected tag value: %s", tag)
+			}
+			visitedOtherPropertyInParent++
+		}
+	})
+	if visitedPropertyInParent != 0 {
+		t.Error("visited overridden property in parent")
+	}
+	if visitedPropertyInGenerator != 1 {
+		t.Errorf("expected exactly one visit to property in generator, saw %d", visitedPropertyInGenerator)
+	}
+	if visitedOtherPropertyInParent != 1 {
+		t.Errorf("expected exactly one visit to other property in parent, saw %d", visitedPropertyInGenerator)
 	}
 }

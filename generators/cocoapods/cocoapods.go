@@ -14,24 +14,18 @@ import (
 
 // Generator generates BOMs for CocoaPods projects
 type Generator struct {
-	options gobom.Options
+	gobom.BaseGenerator
 }
 
 func init() {
 	gobom.RegisterGenerator(&Generator{})
 }
 
-// Configure sets the options for this Generator
-func (g *Generator) Configure(options gobom.Options) error {
-	g.options = options
-	return nil
-}
-
 // GenerateBOM returns a CycloneDX BOM for the specified package path
 func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 	var err error
 	bom := &cyclonedx.BOM{}
-	if g.options.Recurse {
+	if g.Recurse {
 		bom.Components, err = generateComponentsRecursively(path)
 		if err != nil {
 			return nil, err

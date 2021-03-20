@@ -14,11 +14,11 @@ import (
 
 // Generator generates BOMs for Go modules projects
 type Generator struct {
+	gobom.BaseGenerator
+
 	GomodTests     bool `gobom:"set to false to exclude test-only dependencies; defaults to true"`
 	GomodTestsOnly bool `gobom:"set to true to exclude production dependecies"`
 	GomodPackages  bool `gobom:"set to true to include packages as subcomponents in the BOM"`
-
-	recurse bool
 }
 
 func init() {
@@ -30,11 +30,9 @@ func init() {
 }
 
 // Configure sets the options for this Generator
-func (g *Generator) Configure(options gobom.Options) error {
-	g.recurse = options.Recurse
-
+func (g *Generator) Configure() error {
 	filters := make(map[string]bool)
-	for _, name := range options.Filters {
+	for _, name := range g.Filters {
 		filters[name] = true
 	}
 
@@ -100,7 +98,7 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 	if g.GomodTests {
 		args = append(args, "-test")
 	}
-	if g.recurse {
+	if g.Recurse {
 		args = append(args, "./...")
 	}
 

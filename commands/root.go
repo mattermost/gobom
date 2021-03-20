@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/mattermost/gobom"
 	"github.com/mattermost/gobom/commands/internal/generate"
@@ -53,20 +54,37 @@ func registerGeneratorHelpTopic(key string, g gobom.Generator) {
 }
 
 func buildGeneratorHelpText(key string, g gobom.Generator) string {
+	name := gobom.ResolveShortName(g)
 	props := make(map[string]string)
-	t := reflect.ValueOf(g).Elem().Type()
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		help := field.Tag.Get("gobom")
-		if help != "" {
-			props[field.Name] = help
+	globalProps := make(map[string][]string)
+
+	gobom.VisitProperties(g, func(field reflect.StructField, value reflect.Value) {
+		if strings.HasPrefix(strings.ToLower(field.Name), name) {
+			props[field.Name] = field.Tag.Get("gobom")
+		} else {
+			parts := strings.SplitN(field.Tag.Get("gobom"), ",", 3)
+			if len(parts) != 3 {
+				panic(fmt.Sprintf("bad gobom tag on unprefixed field in '%s'", gobom.ResolveName(g)))
+			}
+			globalProps[field.Name] = parts
 		}
-	}
+	})
+
 	propHelp := ""
 	if len(props) > 0 {
-		propHelp = "Available Properties:\n"
+		propHelp = "Global Properties:\n"
+		for name, parts := range globalProps {
+			if parts[0] == "" {
+				propHelp = fmt.Sprintf("%s  %-32s %s\n", propHelp, name, parts[2])
+			} else if parts[1] == "" {
+				propHelp = fmt.Sprintf("%s  %-16s --%-13s %s\n", propHelp, name, parts[0], parts[2])
+			} else {
+				propHelp = fmt.Sprintf("%s  %-16s -%s, --%-9s %s\n", propHelp, name, parts[1], parts[0], parts[2])
+			}
+		}
+		propHelp = fmt.Sprintf("%s\nLocal Properties:\n", propHelp)
 		for name, help := range props {
-			propHelp = fmt.Sprintf("%s  %-24s %s\n", propHelp, name, help)
+			propHelp = fmt.Sprintf("%s  %-32s %s\n", propHelp, name, help)
 		}
 	}
 

@@ -15,7 +15,7 @@ import (
 
 // Generator generates BOMs for npm projects
 type Generator struct {
-	options gobom.Options
+	gobom.BaseGenerator
 
 	NpmDevDependencies bool `gobom:"set to true to include devDependencies"`
 }
@@ -24,17 +24,11 @@ func init() {
 	gobom.RegisterGenerator(&Generator{})
 }
 
-// Configure sets the options for this Generator
-func (g *Generator) Configure(options gobom.Options) error {
-	g.options = options
-	return nil
-}
-
 // GenerateBOM returns a CycloneDX BOM for the specified package path
 func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 	bom := &cyclonedx.BOM{}
 
-	if g.options.Recurse {
+	if g.Recurse {
 		lockfiles, err := readLockfiles(path)
 		if err != nil {
 			return nil, err
@@ -172,9 +166,8 @@ func readLockfile(path string) (*lockfile, error) {
 		data, err = ioutil.ReadFile(filepath.Join(path, "npm-shrinkwrap.json"))
 		if err != nil {
 			return nil, err
-		} else {
-			log.Info("read 'npm-shrinkwrap.json' in '%s'", path)
 		}
+		log.Info("read 'npm-shrinkwrap.json' in '%s'", path)
 	} else {
 		log.Info("read 'package-lock.json' in '%s'", path)
 	}

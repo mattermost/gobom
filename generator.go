@@ -12,7 +12,7 @@ import (
 
 // Generator is a set of methods for generating CycloneDX BOMs
 type Generator interface {
-	Configure(Options) error
+	Configure() error
 	GenerateBOM(string) (*cyclonedx.BOM, error)
 }
 
@@ -34,19 +34,49 @@ func ResolveShortName(g Generator) string {
 	return path.Base(ResolveName(g))
 }
 
-// Options controls various configurable aspects of BOM generation
-type Options struct {
+// VisitProperties visits all the gobom properites in a Generator
+func VisitProperties(g Generator, visitor func(reflect.StructField, reflect.Value)) {
+	visitProperties(g, visitor, nil)
+}
+
+func visitProperties(g interface{}, visitor func(reflect.StructField, reflect.Value), exclude map[string]bool) {
+	e := reflect.ValueOf(g).Elem()
+	t := e.Type()
+	if t.Kind() != reflect.Struct {
+		return
+	}
+	if exclude == nil {
+		exclude = make(map[string]bool)
+	}
+	anons := []int{}
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag := field.Tag
+		if _, ok := tag.Lookup("gobom"); ok && !exclude[field.Name] {
+			visitor(field, e.Field(i))
+			exclude[field.Name] = true
+		} else if field.Anonymous {
+			anons = append(anons, i)
+		}
+	}
+	for _, i := range anons {
+		visitProperties(e.Field(i).Addr().Interface(), visitor, exclude)
+	}
+}
+
+// BaseGenerator implements a no-op Generator
+type BaseGenerator struct {
 	// Recurse tells a Generator to run in recursive mode,
 	// walking all subdirectories and generating components
 	// for every applicable path it sees.
-	Recurse bool
+	Recurse bool `gobom:"recurse,r,scan the target path recursively"`
 
 	// Excludes tells a Generator to exclude the specified
 	// paths when running in recursive mode. This is a global
 	// option; a Generator may also expose a scoped excludes
 	// option as a property. If both are specified, both should
 	// be applied.
-	Excludes *regexp.Regexp
+	Excludes *regexp.Regexp `gobom:"excludes,x,regexp of paths to exclude in recursive mode"`
 
 	// Filters specifies the filtering presets to pass to the
 	// Generator.
@@ -57,7 +87,17 @@ type Options struct {
 	// production dependencies in its output; the 'test' preset
 	// should configure the output to include only non-production
 	// dependencies.
-	Filters []string
+	Filters []string `gobom:"filters,f,filtering presets to pass to generators, e.g. 'release' or 'test'"`
+}
+
+// Configure initializes the Generator
+func (*BaseGenerator) Configure() error {
+	return nil
+}
+
+// GenerateBOM returns a CycloneDX BOM for the specified package path
+func (*BaseGenerator) GenerateBOM(string) (*cyclonedx.BOM, error) {
+	panic("not implemented")
 }
 
 var registerCallbacks = []func(key string, g Generator){}

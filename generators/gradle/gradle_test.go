@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
-
-	"github.com/mattermost/gobom"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -47,7 +45,8 @@ func TestParseDependency(t *testing.T) {
 
 func TestGenerateBOM(t *testing.T) {
 	g := Generator{}
-	g.Configure(gobom.Options{Recurse: true})
+	g.Recurse = true
+	g.Configure()
 	g.GradlePath = []string{"./gradlew"}
 
 	bom, err := g.GenerateBOM("./testdata/testproject")

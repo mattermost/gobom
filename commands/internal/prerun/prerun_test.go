@@ -6,6 +6,8 @@ import (
 	"github.com/mattermost/gobom/commands/internal/generate"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	_ "github.com/mattermost/gobom/generators/gomod"
 )
 
 func TestConfigure(t *testing.T) {

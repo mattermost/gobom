@@ -2,13 +2,12 @@ package cocoapods
 
 import (
 	"testing"
-
-	"github.com/mattermost/gobom"
 )
 
 func TestGenerateBOM(t *testing.T) {
 	g := Generator{}
-	g.Configure(gobom.Options{Recurse: true})
+	g.Recurse = true
+	g.Configure()
 
 	bom, err := g.GenerateBOM("./testdata/testapp")
 	if err != nil {

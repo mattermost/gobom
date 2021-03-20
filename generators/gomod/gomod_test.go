@@ -2,18 +2,15 @@ package gomod
 
 import (
 	"testing"
-
-	"github.com/mattermost/gobom"
 )
 
 func TestGenerateBom(t *testing.T) {
 	generator := Generator{}
 
+	generator.Recurse = true
 	generator.GomodPackages = true
 	generator.GomodTests = false
-	generator.Configure(gobom.Options{
-		Recurse: true,
-	})
+	generator.Configure()
 	if !generator.GomodPackages {
 		t.Fatal("GomodPackages should be true after Configure")
 	}
@@ -35,11 +32,10 @@ func TestGenerateBom(t *testing.T) {
 		t.Fatalf("unexpected package name '%s'", bom.Components[0].Components[0].Name)
 	}
 
+	generator.Recurse = true
 	generator.GomodPackages = false
 	generator.GomodTests = false
-	generator.Configure(gobom.Options{
-		Recurse: true,
-	})
+	generator.Configure()
 	bom, err = generator.GenerateBOM("./testdata/testpackage")
 	if err != nil {
 		t.Fatalf("GenerateBOM failed: %v", err)
@@ -54,11 +50,10 @@ func TestGenerateBom(t *testing.T) {
 		t.Fatalf("unexpected module name '%s'", bom.Components[0].Name)
 	}
 
+	generator.Recurse = true
 	generator.GomodPackages = false
 	generator.GomodTests = true
-	generator.Configure(gobom.Options{
-		Recurse: true,
-	})
+	generator.Configure()
 	bom, err = generator.GenerateBOM("./testdata/testpackage")
 	if err != nil {
 		t.Fatalf("GenerateBOM failed: %v", err)
@@ -71,11 +66,10 @@ func TestGenerateBom(t *testing.T) {
 		t.Fatalf("unexpected module names in BOM")
 	}
 
+	generator.Recurse = true
 	generator.GomodPackages = false
 	generator.GomodTestsOnly = true
-	generator.Configure(gobom.Options{
-		Recurse: true,
-	})
+	generator.Configure()
 	if !generator.GomodTestsOnly {
 		t.Fatal("GomodTestsOnly should be true after Configure")
 	}

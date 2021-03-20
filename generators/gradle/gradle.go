@@ -18,7 +18,7 @@ import (
 
 // Generator generates BOMs for CocoaPods projects
 type Generator struct {
-	options gobom.Options
+	gobom.BaseGenerator
 
 	GradlePath           []string       `gobom:"specifies the path to the Gradle binary"`
 	GradleExcludes       *regexp.Regexp `gobom:"regexp of directories to exclude"`
@@ -31,9 +31,7 @@ func init() {
 }
 
 // Configure sets the options for this Generator
-func (g *Generator) Configure(options gobom.Options) error {
-	g.options = options
-
+func (g *Generator) Configure() error {
 	if len(g.GradlePath) == 0 {
 		// default to not using the wrapper; safe on untrusted code
 		g.GradlePath = []string{"gradle"}
@@ -47,7 +45,7 @@ func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 
 	var err error
 	bom := &cyclonedx.BOM{}
-	if g.options.Recurse {
+	if g.Recurse {
 		bom.Components, err = g.generateComponentsRecursively(path)
 		if err != nil {
 			return nil, err
