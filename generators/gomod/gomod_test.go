@@ -67,23 +67,20 @@ func TestGenerateBom(t *testing.T) {
 	}
 
 	generator.Recurse = true
+	generator.Filters = []string{"release"}
 	generator.GomodPackages = false
-	generator.GomodTestsOnly = true
+	generator.GomodTests = true
 	generator.Configure()
-	if !generator.GomodTestsOnly {
-		t.Fatal("GomodTestsOnly should be true after Configure")
+	if generator.GomodTests {
+		t.Fatal("GomodTests should be false after Configure")
 	}
-	bom, err = generator.GenerateBOM("./testdata/testpackage")
-	if err != nil {
-		t.Fatalf("GenerateBOM failed: %v", err)
-	}
-	if len(bom.Components) != 1 {
-		for _, c := range bom.Components {
-			t.Error(c.PURL)
-		}
-		t.Fatalf("BOM should contain exactly one Component, saw %d", len(bom.Components))
-	}
-	if bom.Components[0].Name != "github.com/golang/go" {
-		t.Fatalf("unexpected module name '%s'", bom.Components[0].Name)
+
+	generator.Recurse = true
+	generator.Filters = []string{"release", "test"}
+	generator.GomodPackages = false
+	generator.GomodTests = true
+	generator.Configure()
+	if !generator.GomodTests {
+		t.Fatal("GomodTests should be true after Configure")
 	}
 }

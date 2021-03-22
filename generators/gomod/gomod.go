@@ -16,16 +16,14 @@ import (
 type Generator struct {
 	gobom.BaseGenerator
 
-	GomodTests     bool `gobom:"set to false to exclude test-only dependencies; defaults to true"`
-	GomodTestsOnly bool `gobom:"set to true to exclude production dependecies"`
-	GomodPackages  bool `gobom:"set to true to include packages as subcomponents in the BOM"`
+	GomodTests    bool `gobom:"set to false to exclude test-only dependencies; defaults to true"`
+	GomodPackages bool `gobom:"set to true to include packages as subcomponents in the BOM"`
 }
 
 func init() {
 	gobom.RegisterGenerator(&Generator{
-		GomodTests:     true,
-		GomodTestsOnly: false,
-		GomodPackages:  false,
+		GomodTests:    true,
+		GomodPackages: false,
 	})
 }
 
@@ -36,7 +34,6 @@ func (g *Generator) Configure() error {
 		filters[name] = true
 	}
 
-	g.GomodTestsOnly = g.GomodTestsOnly || (filters["test"] && !filters["release"])
 	g.GomodTests = g.GomodTests && (!filters["release"] || filters["test"])
 
 	return nil
@@ -61,29 +58,6 @@ func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 		for _, module := range modules {
 			module.Components = nil
 		}
-	}
-
-	if g.GomodTestsOnly {
-		log.Info("rerunning generator with GomodTests=false")
-		g2 := &Generator{}
-		*g2 = *g
-		g2.GomodTestsOnly = false
-		g2.GomodTests = false
-		bom, err := g2.GenerateBOM(path)
-		if err != nil {
-			return nil, err
-		}
-		releaseDeps := make(map[string]bool)
-		for _, component := range bom.Components {
-			releaseDeps[component.PURL] = true
-		}
-		testDeps := make([]*cyclonedx.Component, 0, len(modules))
-		for _, component := range modules {
-			if !releaseDeps[component.PURL] {
-				testDeps = append(testDeps, component)
-			}
-		}
-		return &cyclonedx.BOM{Components: testDeps}, nil
 	}
 
 	return &cyclonedx.BOM{Components: modules}, nil

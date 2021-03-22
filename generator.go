@@ -85,8 +85,12 @@ type BaseGenerator struct {
 	// and should be implemented by all Generators. The 'release'
 	// preset should configure the Generator to include only
 	// production dependencies in its output; the 'test' preset
-	// should configure the output to include only non-production
+	// should configure the output to exclude production-only
 	// dependencies.
+	//
+	// Generators are free to implement additional filtering
+	// presets as seen fit. Available filters should be documented
+	// in the gobom tag of the Filters field.
 	Filters []string `gobom:"filters,f,filtering presets to pass to generators, e.g. 'release' or 'test'"`
 }
 
