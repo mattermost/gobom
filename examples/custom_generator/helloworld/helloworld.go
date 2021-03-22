@@ -11,8 +11,10 @@ type Generator struct {
 	gobom.BaseGenerator
 
 	// Recurse is a global property defined in BaseGenerator;
-	// this overrides the help text in `gobom help custom_generator/helloworld`
-	Recurse string `gobom:",,NOTE: helloworld does not recurse"`
+	// this adds a footnote to the help text shown with the
+	// `gobom help custom_generator/helloworld` command
+	Recurse string   `gobom:",,helloworld does not recurse"`
+	Filters []string `gobom:",,there's nothing to filter here"`
 
 	// Panic is a custom global property exposed as a command-line flag
 	Panic bool `gobom:"panic,X,crash the tool during configure"`

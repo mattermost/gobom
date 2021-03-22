@@ -53,6 +53,13 @@ func registerGeneratorHelpTopic(key string, g gobom.Generator) {
 	helpCommand.Long = buildGeneratorHelpText(key, g)
 }
 
+var (
+	propToFlag      = make(map[string]string)
+	propToShorthand = make(map[string]string)
+	propToHelptext  = make(map[string]string)
+	needsReregister = make(map[string][]string)
+)
+
 func buildGeneratorHelpText(key string, g gobom.Generator) string {
 	name := gobom.ResolveShortName(g)
 	props := make(map[string]string)
@@ -71,17 +78,44 @@ func buildGeneratorHelpText(key string, g gobom.Generator) string {
 	})
 
 	propHelp := ""
-	if len(props) > 0 {
-		propHelp = "Global Properties:\n"
-		for name, parts := range globalProps {
-			if parts[0] == "" {
-				propHelp = fmt.Sprintf("%s  %-32s %s\n", propHelp, name, parts[2])
-			} else if parts[1] == "" {
-				propHelp = fmt.Sprintf("%s  %-16s --%-13s %s\n", propHelp, name, parts[0], parts[2])
-			} else {
-				propHelp = fmt.Sprintf("%s  %-16s -%s, --%-9s %s\n", propHelp, name, parts[1], parts[0], parts[2])
+	propHelp = "Global Properties:\n"
+	footnotes := []string{}
+	for name, parts := range globalProps {
+		if parts[0] == "" {
+			parts[0] = propToFlag[name]
+			parts[1] = propToShorthand[name]
+			helptext := propToHelptext[name]
+			if helptext != "" {
+				footnotes = append(footnotes, parts[2])
+				parts[2] = fmt.Sprintf("%s [%d]", helptext, len(footnotes))
 			}
 		}
+		if parts[0] == "" {
+			propHelp = fmt.Sprintf("%s  %-32s %s\n", propHelp, name, parts[2])
+			needsReregister[name] = append(needsReregister[name], key)
+			println("needs reregister: " + name)
+		} else if parts[1] == "" {
+			propHelp = fmt.Sprintf("%s  %-16s --%-13s %s\n", propHelp, name, parts[0], parts[2])
+		} else {
+			propHelp = fmt.Sprintf("%s  %-16s -%s, --%-9s %s\n", propHelp, name, parts[1], parts[0], parts[2])
+		}
+		if parts[0] != "" && propToFlag[name] == "" {
+			propToFlag[name] = parts[0]
+			propToShorthand[name] = parts[1]
+			propToHelptext[name] = parts[2]
+			for _, keyToReregister := range needsReregister[name] {
+				generatorToReregister, _ := gobom.GetGenerator(keyToReregister)
+				registerGeneratorHelpTopic(keyToReregister, generatorToReregister)
+			}
+		}
+	}
+	if len(footnotes) > 0 {
+		propHelp = fmt.Sprintf("%s\n", propHelp)
+		for i, note := range footnotes {
+			propHelp = fmt.Sprintf("%s  [%d]: %s\n", propHelp, i+1, note)
+		}
+	}
+	if len(props) > 0 {
 		propHelp = fmt.Sprintf("%s\nLocal Properties:\n", propHelp)
 		for name, help := range props {
 			propHelp = fmt.Sprintf("%s  %-32s %s\n", propHelp, name, help)
