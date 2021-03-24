@@ -18,6 +18,7 @@ type Generator struct {
 
 	GomodTests    bool `gobom:"set to false to exclude test-only dependencies; defaults to true"`
 	GomodPackages bool `gobom:"set to true to include packages as subcomponents in the BOM"`
+	GomodMainOnly bool `gobom:"set to true to include only main packages in recursive mode"`
 }
 
 func init() {
@@ -72,9 +73,11 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 	if g.GomodTests {
 		args = append(args, "-test")
 	}
-	if g.Recurse {
-		args = append(args, "./...")
+	paths, err := g.listPackagePaths(path)
+	if err != nil {
+		return nil, fmt.Errorf("go list: %v", err)
 	}
+	args = append(args, paths...)
 
 	cmd := exec.Command("go", args...)
 	cmd.Dir = path
@@ -99,6 +102,25 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 		return nil, fmt.Errorf("go list: %v", err)
 	}
 	return packages, nil
+}
+
+func (g *Generator) listPackagePaths(path string) ([]string, error) {
+	if g.Recurse {
+		if g.GomodMainOnly {
+			log.Debug("listing main packages")
+			cmd := exec.Command("go", "list", "-mod", "readonly", "-f", `{{if eq .Name "main"}}{{.Dir}}{{end}}`, "./...")
+			cmd.Dir = path
+			out, err := cmd.Output()
+			if err != nil {
+				return nil, err
+			}
+			paths := strings.Split(strings.Trim(string(out), "\n"), "\n")
+			log.Debug("found %d main package(s): %s", len(paths), strings.Join(paths, ", "))
+			return paths, nil
+		}
+		return []string{"./..."}, nil
+	}
+	return []string{"."}, nil
 }
 
 func resolveGoVersion(modules []*cyclonedx.Component) error {
