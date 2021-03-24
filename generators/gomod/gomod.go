@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/mattermost/gobom"
@@ -16,9 +18,10 @@ import (
 type Generator struct {
 	gobom.BaseGenerator
 
-	GomodTests    bool `gobom:"set to false to exclude test-only dependencies; defaults to true"`
-	GomodPackages bool `gobom:"set to true to include packages as subcomponents in the BOM"`
-	GomodMainOnly bool `gobom:"set to true to include only main packages in recursive mode"`
+	GomodTests    bool           `gobom:"set to false to exclude test-only dependencies; defaults to true"`
+	GomodPackages bool           `gobom:"set to true to include packages as subcomponents in the BOM"`
+	GomodMainOnly bool           `gobom:"set to true to include only main packages in recursive mode"`
+	GomodExcludes *regexp.Regexp `gobom:"regexp of paths to exclude"`
 }
 
 func init() {
@@ -36,6 +39,14 @@ func (g *Generator) Configure() error {
 	}
 
 	g.GomodTests = g.GomodTests && (!filters["release"] || filters["test"])
+
+	if g.Excludes != nil {
+		if g.GomodExcludes == nil {
+			g.GomodExcludes = g.Excludes
+		} else {
+			g.GomodExcludes = regexp.MustCompile(g.GomodExcludes.String() + "|" + g.Excludes.String())
+		}
+	}
 
 	return nil
 }
@@ -105,22 +116,44 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 }
 
 func (g *Generator) listPackagePaths(path string) ([]string, error) {
-	if g.Recurse {
-		if g.GomodMainOnly {
-			log.Debug("listing main packages")
-			cmd := exec.Command("go", "list", "-mod", "readonly", "-f", `{{if eq .Name "main"}}{{.Dir}}{{end}}`, "./...")
-			cmd.Dir = path
-			out, err := cmd.Output()
-			if err != nil {
-				return nil, err
-			}
-			paths := strings.Split(strings.Trim(string(out), "\n"), "\n")
-			log.Debug("found %d main package(s): %s", len(paths), strings.Join(paths, ", "))
-			return paths, nil
-		}
+	if !g.Recurse {
+		return []string{"."}, nil
+	}
+	if !g.GomodMainOnly && g.GomodExcludes == nil {
 		return []string{"./..."}, nil
 	}
-	return []string{"."}, nil
+	log.Debug("listing packages")
+	args := []string{"list", "-mod", "readonly", "-f"}
+	if g.GomodMainOnly {
+		args = append(args, `{{if eq .Name "main"}}{{.Dir}}{{end}}`, "./...")
+	} else {
+		args = append(args, "{{.Dir}}", "./...")
+	}
+	cmd := exec.Command("go", args...)
+	cmd.Dir = path
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	paths := strings.Split(strings.Trim(string(out), "\n"), "\n")
+	matches := make([]string, 0, len(paths))
+	path, err = filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range paths {
+		match, err := filepath.Rel(path, p)
+		if err != nil {
+			return nil, err
+		}
+		if g.GomodExcludes == nil || !g.GomodExcludes.MatchString(match) {
+			matches = append(matches, "."+string(filepath.Separator)+match)
+		} else {
+			log.Debug("skipping '%s'", match)
+		}
+	}
+	log.Debug("found %d matching main package(s): %s", len(matches), strings.Join(matches, ", "))
+	return matches, nil
 }
 
 func resolveGoVersion(modules []*cyclonedx.Component) error {
