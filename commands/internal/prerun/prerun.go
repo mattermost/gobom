@@ -35,6 +35,7 @@ func Configure(config string, cmd *cobra.Command) bool {
 			flagValue := toFlagValue(value)
 			log.Trace("setting config '%s' to '%s'", name, flagValue)
 			flag.Value.Set(flagValue)
+			flag.Changed = true
 		}
 	}
 

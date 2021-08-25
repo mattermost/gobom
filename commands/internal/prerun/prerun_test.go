@@ -66,5 +66,6 @@ func reset(cmd *cobra.Command) {
 		} else {
 			flag.Value.Set("")
 		}
+		flag.Changed = false
 	})
 }
