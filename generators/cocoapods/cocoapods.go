@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/mattermost/gobom"
@@ -15,10 +16,25 @@ import (
 // Generator generates BOMs for CocoaPods projects
 type Generator struct {
 	gobom.BaseGenerator
+
+	CocoapodsExcludes *regexp.Regexp `gobom:"regexp of paths to exclude"`
 }
 
 func init() {
 	gobom.RegisterGenerator(&Generator{})
+}
+
+// Configure sets the options for this Generator
+func (g *Generator) Configure() error {
+	if g.Excludes != nil {
+		if g.CocoapodsExcludes == nil {
+			g.CocoapodsExcludes = g.Excludes
+		} else {
+			g.CocoapodsExcludes = regexp.MustCompile(g.CocoapodsExcludes.String() + "|" + g.Excludes.String())
+		}
+	}
+
+	return nil
 }
 
 // GenerateBOM returns a CycloneDX BOM for the specified package path
@@ -26,7 +42,7 @@ func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 	var err error
 	bom := &cyclonedx.BOM{}
 	if g.Recurse {
-		bom.Components, err = generateComponentsRecursively(path)
+		bom.Components, err = g.generateComponentsRecursively(path)
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +55,11 @@ func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 	return bom, nil
 }
 
-func generateComponentsRecursively(path string) ([]*cyclonedx.Component, error) {
+func (g *Generator) generateComponentsRecursively(path string) ([]*cyclonedx.Component, error) {
+	if g.CocoapodsExcludes != nil && g.CocoapodsExcludes.MatchString(path) {
+		log.Debug("skipping '%s'", path)
+		return nil, nil
+	}
 	components, _ := generateComponents(path)
 
 	// traverse subdirectories
@@ -49,7 +69,7 @@ func generateComponentsRecursively(path string) ([]*cyclonedx.Component, error) 
 	}
 	for _, info := range infos {
 		if info.IsDir() {
-			components2, err := generateComponentsRecursively(filepath.Join(path, info.Name()))
+			components2, err := g.generateComponentsRecursively(filepath.Join(path, info.Name()))
 			if err == nil {
 				components = append(components, components2...)
 			}
