@@ -37,6 +37,14 @@ func (g *Generator) Configure() error {
 		g.GradlePath = []string{"gradle"}
 	}
 
+	if g.Excludes != nil {
+		if g.GradleExcludes == nil {
+			g.GradleExcludes = g.Excludes
+		} else {
+			g.GradleExcludes = regexp.MustCompile(g.GradleExcludes.String() + "|" + g.Excludes.String())
+		}
+	}
+
 	return nil
 }
 
