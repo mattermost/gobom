@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/mattermost/gobom"
@@ -17,11 +18,32 @@ import (
 type Generator struct {
 	gobom.BaseGenerator
 
-	NpmDevDependencies bool `gobom:"set to true to include devDependencies"`
+	NpmDevDependencies bool           `gobom:"set to true to include devDependencies"`
+	NpmExcludes        *regexp.Regexp `gobom:"regexp of paths to exclude"`
 }
 
 func init() {
 	gobom.RegisterGenerator(&Generator{})
+}
+
+// Configure sets the options for this Generator
+func (g *Generator) Configure() error {
+	filters := make(map[string]bool)
+	for _, name := range g.Filters {
+		filters[name] = true
+	}
+
+	g.NpmDevDependencies = g.NpmDevDependencies && (!filters["release"] || filters["test"])
+
+	if g.Excludes != nil {
+		if g.NpmExcludes == nil {
+			g.NpmExcludes = g.Excludes
+		} else {
+			g.NpmExcludes = regexp.MustCompile(g.NpmExcludes.String() + "|" + g.Excludes.String())
+		}
+	}
+
+	return nil
 }
 
 // GenerateBOM returns a CycloneDX BOM for the specified package path
@@ -29,7 +51,7 @@ func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 	bom := &cyclonedx.BOM{}
 
 	if g.Recurse {
-		lockfiles, err := readLockfiles(path)
+		lockfiles, err := g.readLockfiles(path)
 		if err != nil {
 			return nil, err
 		}
@@ -193,8 +215,13 @@ func readLockfile(path string) (*lockfile, error) {
 	return lockfile, err
 }
 
-func readLockfiles(path string) (map[string]*lockfile, error) {
+func (g *Generator) readLockfiles(path string) (map[string]*lockfile, error) {
 	lockfiles := make(map[string]*lockfile)
+
+	if g.NpmExcludes != nil && g.NpmExcludes.MatchString(path) {
+		log.Debug("skipping '%s'", path)
+		return lockfiles, nil
+	}
 
 	// traverse subdirectories
 	infos, err := ioutil.ReadDir(path)
@@ -207,7 +234,7 @@ func readLockfiles(path string) (map[string]*lockfile, error) {
 				log.Debug("skipping 'node_modules' directory in '%s'", path)
 				continue
 			}
-			lockfiles2, err := readLockfiles(filepath.Join(path, info.Name()))
+			lockfiles2, err := g.readLockfiles(filepath.Join(path, info.Name()))
 			if err != nil {
 				return nil, err
 			}
