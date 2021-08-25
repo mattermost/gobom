@@ -85,7 +85,7 @@ var Command = &cobra.Command{
 			}
 		}
 
-		log.Debug("meging and marshaling BOMs")
+		log.Debug("merging and marshaling BOMs")
 
 		if cmd.Flag("url").Value.String() != "" {
 			// suppress output and upload directly to Dependency-Track
