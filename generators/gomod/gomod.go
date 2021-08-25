@@ -152,7 +152,7 @@ func (g *Generator) listPackagePaths(path string) ([]string, error) {
 			log.Debug("skipping '%s'", match)
 		}
 	}
-	log.Debug("found %d matching main package(s): %s", len(matches), strings.Join(matches, ", "))
+	log.Debug("found %d matching package(s): %s", len(matches), strings.Join(matches, ", "))
 	return matches, nil
 }
 
