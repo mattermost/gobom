@@ -60,10 +60,10 @@ func Upload(file io.Reader) {
 
 	p1, err := getProject(client, project)
 	if err != nil {
-		log.Error("project lookup failed: %v", err)
-		return
+		log.Warn("project lookup failed: %v", err)
+	} else {
+		log.Debug("last BOM import: %s", time.Unix(p1.LastBomImport/1000, 0).Format(time.Stamp))
 	}
-	log.Debug("last BOM import: %s", time.Unix(p1.LastBomImport/1000, 0).Format(time.Stamp))
 	token, err := uploadBOM(client, file, project)
 	if err != nil {
 		log.Error("%v", err)
