@@ -35,3 +35,11 @@ jobs:
       - checkout
       - run:
           command: golangci-lint run ./...
+
+
+workflows:
+  version: 2
+  ci:
+    jobs:
+      - test-build
+      - check-golangci-lint
