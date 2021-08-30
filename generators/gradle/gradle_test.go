@@ -46,6 +46,7 @@ func TestParseDependency(t *testing.T) {
 func TestGenerateBOM(t *testing.T) {
 	g := Generator{}
 	g.Recurse = true
+
 	err := g.Configure()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

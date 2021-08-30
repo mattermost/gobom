@@ -3,7 +3,7 @@ jobs:
   test-build:
     working_directory: ~/gobom
     docker:
-      - image: circleci/golang:1.17.0
+      - image: cimg/go:1.17
     steps:
       - checkout
       - restore_cache:
@@ -19,6 +19,8 @@ jobs:
       - run:
           name: Run tests
           command: |
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jdk
             mkdir -p /tmp/test-reports
             gotestsum --junitfile /tmp/test-reports/unit-tests.xml
       - store_test_results:

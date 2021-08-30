@@ -64,6 +64,7 @@ func (g *Generator) GenerateBOM(path string) (*cyclonedx.BOM, error) {
 			return nil, err
 		}
 	}
+
 	return bom, nil
 }
 
@@ -75,6 +76,7 @@ func (g *Generator) generateComponentsRecursively(path string) ([]*cyclonedx.Com
 	if err != nil {
 		return nil, err
 	}
+
 	for _, info := range infos {
 		if info.IsDir() {
 			next := filepath.Join(path, info.Name())
@@ -88,6 +90,7 @@ func (g *Generator) generateComponentsRecursively(path string) ([]*cyclonedx.Com
 			}
 		}
 	}
+
 	return components, nil
 }
 
@@ -181,13 +184,13 @@ func describe(component *gradleComponent) {
 		}
 	}
 	component.Description = fmt.Sprintf("%s\nRequired by:\n\t%s\n", component.Description, strings.Join(shortestChain, "\n\t"))
-
 }
 
 func buildDependencyChains(component *gradleComponent, maxDepth int) [][]string {
 	if len(component.dependants) == 0 || maxDepth < 0 {
-		return [][]string{[]string{}}
+		return [][]string{}
 	}
+
 	chains := [][]string{}
 	for _, dependant := range component.dependants {
 		chains2 := buildDependencyChains(dependant, maxDepth-1)
@@ -196,6 +199,7 @@ func buildDependencyChains(component *gradleComponent, maxDepth int) [][]string 
 		}
 		chains = append(chains, chains2...)
 	}
+
 	return chains
 }
 
@@ -208,32 +212,37 @@ func (g *Generator) gradle(wd string) (string, error) {
 			}
 			path = filepath.Join(wd, path)
 		}
+
 		path, err := exec.LookPath(path)
 		if err == nil {
 			log.Debug("using Gradle binary from '%s'", path)
 			return path, nil
 		}
 	}
+
 	return "", fmt.Errorf("could not locate Gradle binary")
 }
 
 func (g *Generator) listDependencies(path string) ([]*buildConfig, error) {
-	log.Info("listing dependencies in '%s'", path)
+	log.Info("listing dependencies in %q", path)
 
 	gradle, err := g.gradle(path)
 	if err != nil {
 		return nil, err
 	}
+
 	cmd := exec.Command(gradle, "-q", "--console", "plain", "dependencies")
 	cmd.Dir = path
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
+
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
 	}
+
 	out := unmarshal(stdout)
 	trees := []*buildConfig{}
 	for _, node := range out {
@@ -241,6 +250,7 @@ func (g *Generator) listDependencies(path string) ([]*buildConfig, error) {
 			trees = append(trees, (*buildConfig)(node))
 		}
 	}
+
 	err = cmd.Wait()
 	return trees, err
 }
@@ -262,6 +272,7 @@ func unmarshal(r io.Reader) []*node {
 		node, err = unmarshalSubtree(reader, 0)
 		output = append(output, node)
 	}
+
 	return output
 }
 
