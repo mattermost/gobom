@@ -96,9 +96,14 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 	if err != nil {
 		return nil, fmt.Errorf("go list: %v", err)
 	}
+
 	stderr := &bytes.Buffer{}
 	cmd.Stderr = stderr
-	cmd.Start()
+	err = cmd.Start()
+	if err != nil {
+		return nil, fmt.Errorf("go list start: %v", err)
+	}
+
 	decoder := json.NewDecoder(stdout)
 	for decoder.More() {
 		pkg := &pkg{}
@@ -108,10 +113,12 @@ func (g *Generator) listPackages(path string) ([]*cyclonedx.Component, error) {
 		}
 		packages = append(packages, pkg.toComponents()...)
 	}
+
 	if err := cmd.Wait(); err != nil {
-		log.Error("'go list' failed with error message:\n\n%s", string(stderr.Bytes()))
+		log.Error("'go list' failed with error message:\n\n%s", stderr.String())
 		return nil, fmt.Errorf("go list: %v", err)
 	}
+
 	return packages, nil
 }
 
@@ -119,39 +126,47 @@ func (g *Generator) listPackagePaths(path string) ([]string, error) {
 	if !g.Recurse {
 		return []string{"."}, nil
 	}
+
 	if !g.GomodMainOnly && g.GomodExcludes == nil {
 		return []string{"./..."}, nil
 	}
+
 	log.Debug("listing packages")
+
 	args := []string{"list", "-mod", "readonly", "-f"}
 	if g.GomodMainOnly {
 		args = append(args, `{{if eq .Name "main"}}{{.Dir}}{{end}}`, "./...")
 	} else {
 		args = append(args, "{{.Dir}}", "./...")
 	}
+
 	cmd := exec.Command("go", args...)
 	cmd.Dir = path
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
+
 	paths := strings.Split(strings.Trim(string(out), "\n"), "\n")
 	matches := make([]string, 0, len(paths))
 	path, err = filepath.Abs(path)
 	if err != nil {
 		return nil, err
 	}
+
 	for _, p := range paths {
 		match, err := filepath.Rel(path, p)
 		if err != nil {
 			return nil, err
 		}
+
 		if g.GomodExcludes == nil || !g.GomodExcludes.MatchString(match) {
 			matches = append(matches, "."+string(filepath.Separator)+match)
 		} else {
 			log.Debug("skipping '%s'", match)
 		}
 	}
+
 	log.Debug("found %d matching package(s): %s", len(matches), strings.Join(matches, ", "))
 	return matches, nil
 }
@@ -164,11 +179,13 @@ func resolveGoVersion(modules []*cyclonedx.Component) error {
 	if err != nil {
 		return err
 	}
+
 	var major, minor, patch = 0, 0, 0
 	n, err := fmt.Sscanf(string(out), "go version go%d.%d.%d", &major, &minor, &patch)
 	if n == 0 {
 		return err
 	}
+
 	version := fmt.Sprintf("%d.%d.%d", major, minor, patch)
 	log.Trace("local Go version is %s", version)
 	for _, module := range modules {
@@ -197,6 +214,7 @@ func resolveWhy(path string, modules []*cyclonedx.Component) error {
 		if start == -1 {
 			continue
 		}
+
 		end := start + bytes.Index(why[start:], []byte("\n#"))
 		if end < start {
 			end = len(why)
@@ -223,10 +241,11 @@ func mapPackagesToModules(packages []*cyclonedx.Component) []*cyclonedx.Componen
 				Type:        cyclonedx.Library,
 				Name:        pkg.Group,
 				Version:     pkg.Version,
-				Description: fmt.Sprintf("Golang module\n\nPackages:\n"),
+				Description: "Golang module\n\nPackages:\n",
 				PURL:        gobom.PURL(gobom.GolangPackage, pkg.Group, pkg.Version),
 			}
 		}
+
 		module.Components = append(module.Components, pkg)
 		if len(module.Components) < 5 {
 			module.Description = fmt.Sprintf("%s\t%s\n", module.Description, pkg.Name)
@@ -252,5 +271,6 @@ func normalizeVersion(version string) string {
 	} else if strings.HasPrefix(version, "v") {
 		return version[1:]
 	}
+
 	return version
 }

@@ -50,18 +50,36 @@ func (c *Client) Upload(file io.Reader, project, version, uuid string) (string, 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	if len(project) > 0 {
-		writer.WriteField("projectName", project)
+		err := writer.WriteField("projectName", project)
+		if err != nil {
+			return "", err
+		}
 	}
+
 	if len(version) > 0 {
-		writer.WriteField("projectVersion", version)
+		err := writer.WriteField("projectVersion", version)
+		if err != nil {
+			return "", err
+		}
 	}
+
 	if len(uuid) > 0 {
-		writer.WriteField("project", uuid)
+		err := writer.WriteField("project", uuid)
+		if err != nil {
+			return "", err
+		}
 	}
-	writer.WriteField("autoCreate", "true")
+
+	err := writer.WriteField("autoCreate", "true")
+	if err != nil {
+		return "", err
+	}
 
 	bom, _ := writer.CreateFormFile("bom", "bom.xml")
-	io.Copy(bom, file)
+	_, err = io.Copy(bom, file)
+	if err != nil {
+		return "", err
+	}
 
 	writer.Close()
 
@@ -69,19 +87,23 @@ func (c *Client) Upload(file io.Reader, project, version, uuid string) (string, 
 	if err != nil {
 		return "", err
 	}
+
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 	request.Header.Set("X-Api-Key", c.secret)
 	response, err := c.Do(request)
 	if err != nil {
 		return "", err
 	}
+
 	result, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
+
 	if response.StatusCode > 299 {
 		return "", fmt.Errorf("error response from server: %s -- %s", response.Status, string(result))
 	}
+
 	token := &struct {
 		Token string
 	}{}
@@ -89,6 +111,7 @@ func (c *Client) Upload(file io.Reader, project, version, uuid string) (string, 
 	if err != nil {
 		return "", err
 	}
+
 	return token.Token, nil
 }
 
@@ -98,10 +121,12 @@ func (c *Client) Version() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	result, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
+
 	version := &struct {
 		Version string
 	}{}
@@ -109,6 +134,7 @@ func (c *Client) Version() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return version.Version, nil
 }
 
@@ -125,28 +151,34 @@ func (c *Client) Lookup(project, version string) (*Project, error) {
 		"name":    []string{project},
 		"version": []string{version},
 	}
+
 	request, err := http.NewRequest(http.MethodGet,
 		c.url("api/v1/project/lookup")+"?"+values.Encode(), nil)
 	if err != nil {
 		return nil, err
 	}
+
 	request.Header.Set("X-Api-Key", c.secret)
 	response, err := c.Do(request)
 	if err != nil {
 		return nil, err
 	}
+
 	result, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
+
 	if response.StatusCode > 299 {
 		return nil, fmt.Errorf("error response from server: %s -- %s", response.Status, string(result))
 	}
+
 	p := &Project{}
 	err = json.Unmarshal(result, p)
 	if err != nil {
 		return nil, err
 	}
+
 	return p, nil
 }
 
@@ -157,20 +189,24 @@ func (c *Client) GetProject(uuid string) (*Project, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	request.Header.Set("X-Api-Key", c.secret)
 	response, err := c.Do(request)
 	if err != nil {
 		return nil, err
 	}
+
 	result, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
+
 	p := &Project{}
 	err = json.Unmarshal(result, p)
 	if err != nil {
 		return nil, err
 	}
+
 	return p, nil
 }
 
@@ -178,5 +214,6 @@ func (c *Client) url(target string) string {
 	result := &url.URL{}
 	*result = *c.baseURL
 	result.Path = path.Join(result.Path, target)
+
 	return result.String()
 }

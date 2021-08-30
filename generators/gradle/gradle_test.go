@@ -46,7 +46,10 @@ func TestParseDependency(t *testing.T) {
 func TestGenerateBOM(t *testing.T) {
 	g := Generator{}
 	g.Recurse = true
-	g.Configure()
+	err := g.Configure()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	g.GradlePath = []string{"./gradlew"}
 
 	bom, err := g.GenerateBOM("./testdata/testproject")
@@ -64,6 +67,7 @@ func TestGenerateBOM(t *testing.T) {
 		"junit":                "pkg:maven/junit/junit@4.12",
 		"hamcrest-core":        "pkg:maven/org.hamcrest/hamcrest-core@1.3",
 	}
+
 	for _, component := range bom.Components {
 		if purl, ok := expected[component.Name]; ok && purl == component.PURL {
 			found++
@@ -73,6 +77,7 @@ func TestGenerateBOM(t *testing.T) {
 			t.Errorf("unexpected component: '%s'", component.Name)
 		}
 	}
+
 	if found != len(expected) {
 		t.Errorf("expected %d components, saw %d", len(expected), found)
 	}

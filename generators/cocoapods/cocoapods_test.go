@@ -7,7 +7,10 @@ import (
 func TestGenerateBOM(t *testing.T) {
 	g := Generator{}
 	g.Recurse = true
-	g.Configure()
+	err := g.Configure()
+	if err != nil {
+		t.Fatalf("GenerateBOM failed: %v", err)
+	}
 
 	bom, err := g.GenerateBOM("./testdata/testapp")
 	if err != nil {

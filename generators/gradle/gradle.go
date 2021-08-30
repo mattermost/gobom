@@ -275,16 +275,22 @@ func unmarshalSubtree(reader *bufio.Reader, depth int) (*node, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		if nodePrefix.Match(peek) {
-			reader.Discard(len(peek))
+			_, err := reader.Discard(len(peek))
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			return nil, nil
 		}
 	}
+
 	tree.value, err = reader.ReadString('\n')
 	if err != nil {
 		return tree, err
 	}
+
 	for {
 		subtree, err := unmarshalSubtree(reader, depth+1)
 		if subtree == nil {

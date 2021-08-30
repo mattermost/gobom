@@ -199,7 +199,7 @@ func (p pods) Get(i int) pod {
 	case map[string]interface{}:
 		return mapPod(t)
 	default:
-		panic(fmt.Sprintf("bad lockfile"))
+		panic("bad lockfile")
 	}
 }
 
