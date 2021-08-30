@@ -61,7 +61,11 @@ func TestUpload(t *testing.T) {
 			t.Errorf("no valid API key in request")
 		}
 
-		req.ParseMultipartForm(int64(len(bom)))
+		err := req.ParseMultipartForm(int64(len(bom)))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
 		file, _, _ := req.FormFile("bom")
 		uploaded, _ := ioutil.ReadAll(file)
 

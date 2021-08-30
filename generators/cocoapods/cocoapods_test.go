@@ -7,7 +7,10 @@ import (
 func TestGenerateBOM(t *testing.T) {
 	g := Generator{}
 	g.Recurse = true
-	g.Configure()
+	err := g.Configure()
+	if err != nil {
+		t.Fatalf("GenerateBOM failed: %v", err)
+	}
 
 	bom, err := g.GenerateBOM("./testdata/testapp")
 	if err != nil {
@@ -27,6 +30,7 @@ func TestGenerateBOM(t *testing.T) {
 		"AFNetworking/NSURLConnection": "pkg:cocoapods/AFNetworking/NSURLConnection@2.7.0",
 		"AFNetworking/NSURLSession":    "pkg:cocoapods/AFNetworking/NSURLSession@2.7.0",
 	}
+
 	for _, component := range bom.Components {
 		if purl, ok := expected[component.Name]; ok && purl == component.PURL {
 			found++
@@ -36,6 +40,7 @@ func TestGenerateBOM(t *testing.T) {
 			t.Errorf("unexpected component: '%s'", component.Name)
 		}
 	}
+
 	if found != len(expected) {
 		t.Errorf("expected %d components, saw %d", len(expected), found)
 	}

@@ -10,7 +10,11 @@ func TestGenerateBom(t *testing.T) {
 	generator.Recurse = true
 	generator.GomodPackages = true
 	generator.GomodTests = false
-	generator.Configure()
+	err := generator.Configure()
+	if err != nil {
+		t.Fatalf("GenerateBOM failed: %v", err)
+	}
+
 	if !generator.GomodPackages {
 		t.Fatal("GomodPackages should be true after Configure")
 	}
@@ -35,11 +39,16 @@ func TestGenerateBom(t *testing.T) {
 	generator.Recurse = true
 	generator.GomodPackages = false
 	generator.GomodTests = false
-	generator.Configure()
+	err = generator.Configure()
+	if err != nil {
+		t.Fatalf("GenerateBOM failed: %v", err)
+	}
+
 	bom, err = generator.GenerateBOM("./testdata/testpackage")
 	if err != nil {
 		t.Fatalf("GenerateBOM failed: %v", err)
 	}
+
 	if len(bom.Components) != 1 {
 		t.Fatal("BOM should contain exactly one Component")
 	}
@@ -53,7 +62,11 @@ func TestGenerateBom(t *testing.T) {
 	generator.Recurse = true
 	generator.GomodPackages = false
 	generator.GomodTests = true
-	generator.Configure()
+	err = generator.Configure()
+	if err != nil {
+		t.Fatalf("GenerateBOM failed: %v", err)
+	}
+
 	bom, err = generator.GenerateBOM("./testdata/testpackage")
 	if err != nil {
 		t.Fatalf("GenerateBOM failed: %v", err)
@@ -70,7 +83,10 @@ func TestGenerateBom(t *testing.T) {
 	generator.Filters = []string{"release"}
 	generator.GomodPackages = false
 	generator.GomodTests = true
-	generator.Configure()
+	err = generator.Configure()
+	if err != nil {
+		t.Fatalf("GenerateBOM failed: %v", err)
+	}
 	if generator.GomodTests {
 		t.Fatal("GomodTests should be false after Configure")
 	}
@@ -79,7 +95,11 @@ func TestGenerateBom(t *testing.T) {
 	generator.Filters = []string{"release", "test"}
 	generator.GomodPackages = false
 	generator.GomodTests = true
-	generator.Configure()
+	err = generator.Configure()
+	if err != nil {
+		t.Fatalf("GenerateBOM failed: %v", err)
+	}
+
 	if !generator.GomodTests {
 		t.Fatal("GomodTests should be true after Configure")
 	}

@@ -28,7 +28,7 @@ func TestConfigure(t *testing.T) {
 	}
 	reset(cmd)
 
-	cmd.ParseFlags([]string{"-x", "foobar"})
+	_ = cmd.ParseFlags([]string{"-x", "foobar"})
 	if ok := Configure("./testdata/config.json", cmd); !ok {
 		t.Errorf("unexpected failure calling Configure")
 	}
@@ -62,10 +62,11 @@ func TestConfigure(t *testing.T) {
 func reset(cmd *cobra.Command) {
 	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		if slice, ok := flag.Value.(pflag.SliceValue); ok {
-			slice.Replace([]string{})
+			_ = slice.Replace([]string{})
 		} else {
-			flag.Value.Set("")
+			_ = flag.Value.Set("")
 		}
+
 		flag.Changed = false
 	})
 }

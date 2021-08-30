@@ -209,7 +209,10 @@ func readLockfile(path string) (*lockfile, error) {
 	data, err = ioutil.ReadFile(filepath.Join(path, "package.json"))
 	if err == nil {
 		log.Trace("read 'package.json' in '%s'", path)
-		json.Unmarshal(data, &lockfile.manifest)
+		errUnMarshal := json.Unmarshal(data, &lockfile.manifest)
+		if errUnMarshal != nil {
+			return lockfile, errUnMarshal
+		}
 	}
 
 	return lockfile, err

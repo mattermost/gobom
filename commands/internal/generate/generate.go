@@ -92,7 +92,7 @@ var Command = &cobra.Command{
 			buffer := &bytes.Buffer{}
 			buffer.WriteString(xml.Header)
 			encoder := xml.NewEncoder(buffer)
-			encoder.Encode(merge(boms))
+			_ = encoder.Encode(merge(boms))
 			upload.Upload(buffer)
 		} else {
 			// no upload, just print to stdout
