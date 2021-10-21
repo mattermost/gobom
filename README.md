@@ -11,7 +11,7 @@ go get github.com/mattermost/gobom/cmd/gobom
 ## Usage
 
 ```
-gobom generate --recurse --upload https://dependency-track.example.com --key $DEPENDENCY_TRACK_API_KEY --project projectname@version /path/to/project/
+gobom generate --recurse --url https://dependency-track.example.com --key $DEPENDENCY_TRACK_API_KEY --project projectname@version /path/to/project/
 ```
 
 ### What does it do?
