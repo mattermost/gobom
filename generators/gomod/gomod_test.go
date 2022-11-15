@@ -78,6 +78,9 @@ func TestGenerateBom(t *testing.T) {
 		(bom.Components[1].Name != "github.com/mattermost/gobom" || bom.Components[0].Name != "github.com/golang/go") {
 		t.Fatalf("unexpected module names in BOM")
 	}
+	if bom.Components[1].PURL != "pkg:rpm/golang@" + bom.Components[1].Version {
+		t.Fatalf("unexpected PURL for Go stdlib")
+	}
 
 	generator.Recurse = true
 	generator.Filters = []string{"release"}
