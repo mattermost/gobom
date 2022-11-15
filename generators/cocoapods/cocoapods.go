@@ -2,7 +2,7 @@ package cocoapods
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -63,7 +63,7 @@ func (g *Generator) generateComponentsRecursively(path string) ([]*cyclonedx.Com
 	components, _ := generateComponents(path)
 
 	// traverse subdirectories
-	infos, err := ioutil.ReadDir(path)
+	infos, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func buildDependencyChains(component *podComponent, maxDepth int) [][]string {
 }
 
 func readLockfile(path string) (*lockfile, error) {
-	data, err := ioutil.ReadFile(filepath.Join(path, "Podfile.lock"))
+	data, err := os.ReadFile(filepath.Join(path, "Podfile.lock"))
 	if err != nil {
 		return nil, err
 	}

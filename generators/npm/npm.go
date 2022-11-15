@@ -3,7 +3,7 @@ package npm
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -183,9 +183,9 @@ func resolveDependants(component *npmComponent) {
 }
 
 func readLockfile(path string) (*lockfile, error) {
-	data, err := ioutil.ReadFile(filepath.Join(path, "package-lock.json"))
+	data, err := os.ReadFile(filepath.Join(path, "package-lock.json"))
 	if err != nil {
-		data, err = ioutil.ReadFile(filepath.Join(path, "npm-shrinkwrap.json"))
+		data, err = os.ReadFile(filepath.Join(path, "npm-shrinkwrap.json"))
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +206,7 @@ func readLockfile(path string) (*lockfile, error) {
 	}
 
 	// read package.json if available
-	data, err = ioutil.ReadFile(filepath.Join(path, "package.json"))
+	data, err = os.ReadFile(filepath.Join(path, "package.json"))
 	if err == nil {
 		log.Trace("read 'package.json' in '%s'", path)
 		errUnMarshal := json.Unmarshal(data, &lockfile.manifest)
@@ -227,7 +227,7 @@ func (g *Generator) readLockfiles(path string) (map[string]*lockfile, error) {
 	}
 
 	// traverse subdirectories
-	infos, err := ioutil.ReadDir(path)
+	infos, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
