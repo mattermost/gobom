@@ -110,7 +110,7 @@ func (g *Generator) generateComponents(path string) ([]*cyclonedx.Component, err
 	components := map[string]*gradleComponent{}
 	for _, config := range configs {
 		if (g.GradleConfigs != nil && !g.GradleConfigs.MatchString(config.Name())) ||
-			(g.GradleExcludes != nil && g.GradleConfigExcludes.MatchString(config.Name())) {
+			(g.GradleConfigExcludes != nil && g.GradleConfigExcludes.MatchString(config.Name())) {
 			log.Trace("skipping config '%s'", config.Name())
 			continue
 		}
