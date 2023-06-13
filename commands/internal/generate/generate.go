@@ -26,10 +26,16 @@ var (
 var Command = &cobra.Command{
 	Use:   "generate [flags] [path]",
 	Short: "generate software bills of materials",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.LogLevel += log.LevelWarn
-		path := args[0] // TODO: default to ".", allow specifying multiple paths
+
+		var paths []string
+		if len(args) == 0 {
+			paths = []string{"."}
+		} else {
+			paths = args
+		}
 
 		properties := sliceToMap(properties)
 		for name, propname := range globalProperties {
@@ -76,12 +82,14 @@ var Command = &cobra.Command{
 		boms := make([]*cyclonedx.BOM, 0, len(configuredGenerators))
 		for name, generator := range configuredGenerators {
 			log.Info("running '%s' generator", name)
-			bom, err := generator.GenerateBOM(path)
-			if err != nil {
-				log.Warn("'%s' generator returned an error: %v", name, err)
-			}
-			if bom != nil {
-				boms = append(boms, bom)
+			for _, path := range paths {
+				bom, err := generator.GenerateBOM(path)
+				if err != nil {
+					log.Warn("'%s' generator returned an error: %v", name, err)
+				}
+				if bom != nil {
+					boms = append(boms, bom)
+				}
 			}
 		}
 
