@@ -110,7 +110,7 @@ func (g *Generator) generateComponents(path string) ([]*cyclonedx.Component, err
 	components := map[string]*gradleComponent{}
 	for _, config := range configs {
 		if (g.GradleConfigs != nil && !g.GradleConfigs.MatchString(config.Name())) ||
-			(g.GradleExcludes != nil && g.GradleConfigExcludes.MatchString(config.Name())) {
+			(g.GradleConfigExcludes != nil && g.GradleConfigExcludes.MatchString(config.Name())) {
 			log.Trace("skipping config '%s'", config.Name())
 			continue
 		}
@@ -247,6 +247,7 @@ func (g *Generator) listDependencies(path string) ([]*buildConfig, error) {
 	trees := []*buildConfig{}
 	for _, node := range out {
 		if len(node.nodes) > 0 {
+			log.Trace("found build config: %s", strings.TrimSpace(node.value))
 			trees = append(trees, (*buildConfig)(node))
 		}
 	}
@@ -319,7 +320,10 @@ type buildConfig node
 var buildConfigValue = regexp.MustCompile(`^(.*?) - (.*)\n`)
 
 func (t *buildConfig) Name() string {
-	return buildConfigValue.FindStringSubmatch(t.value)[1]
+	if match := buildConfigValue.FindStringSubmatch(t.value); match != nil {
+		return match[1]
+	}
+	return t.value
 }
 
 func (t *buildConfig) Description() string {
