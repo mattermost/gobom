@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -95,7 +94,7 @@ func (c *Client) Upload(file io.Reader, project, version, uuid string) (string, 
 		return "", err
 	}
 
-	result, err := ioutil.ReadAll(response.Body)
+	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
@@ -122,7 +121,7 @@ func (c *Client) Version() (string, error) {
 		return "", err
 	}
 
-	result, err := ioutil.ReadAll(response.Body)
+	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
@@ -164,7 +163,7 @@ func (c *Client) Lookup(project, version string) (*Project, error) {
 		return nil, err
 	}
 
-	result, err := ioutil.ReadAll(response.Body)
+	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +195,7 @@ func (c *Client) GetProject(uuid string) (*Project, error) {
 		return nil, err
 	}
 
-	result, err := ioutil.ReadAll(response.Body)
+	result, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
 	}

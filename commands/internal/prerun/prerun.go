@@ -2,7 +2,7 @@ package prerun
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
@@ -12,7 +12,7 @@ import (
 
 // Configure reads and applies the config file if specified
 func Configure(config string, cmd *cobra.Command) bool {
-	file, err := ioutil.ReadFile(config)
+	file, err := os.ReadFile(config)
 	if err != nil {
 		log.Error("unable to read config file: %v", err)
 		return false

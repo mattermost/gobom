@@ -191,7 +191,11 @@ func resolveGoVersion(modules []*cyclonedx.Component) error {
 	for _, module := range modules {
 		if module.Name == "github.com/golang/go" && module.Version == "unknown" {
 			module.Version = version
-			module.PURL = gobom.PURL(gobom.GolangPackage, module.Name, version)
+			// OSS Index has pretty good data for RPM but none for the
+			// PURL "pkg:golang/github.com/golang/go", so as a workaround
+			// just use RPM instead. We don't know what the actual source
+			// of the package is.
+			module.PURL = gobom.PURL(gobom.RpmPackage, "golang", version)
 		}
 	}
 

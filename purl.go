@@ -12,6 +12,7 @@ const (
 	NpmPackage       = "npm"
 	CocoapodsPackage = "cocoapods"
 	GradlePackage    = "maven" // OSS Index doesn't support gradle PURLs so fall back to maven
+	RpmPackage       = "rpm"
 )
 
 // PURL returns a package URL for the specified package type, name, and version

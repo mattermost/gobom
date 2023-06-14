@@ -2,7 +2,7 @@ package dt
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -67,7 +67,7 @@ func TestUpload(t *testing.T) {
 		}
 
 		file, _, _ := req.FormFile("bom")
-		uploaded, _ := ioutil.ReadAll(file)
+		uploaded, _ := io.ReadAll(file)
 
 		if string(uploaded) != bom {
 			t.Errorf("unexpected bom contents: '%s'", string(uploaded))

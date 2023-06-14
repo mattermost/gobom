@@ -3,12 +3,12 @@ package gradle
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func TestUnmarshal(t *testing.T) {
-	b, err := ioutil.ReadFile("./testdata/gradle-dependencies.txt")
+	b, err := os.ReadFile("./testdata/gradle-dependencies.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
