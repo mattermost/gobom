@@ -5,7 +5,7 @@ An extensible [CycloneDX](https://cyclonedx.org/) BOM generator and [Dependency-
 ## Installation
 
 ```
-go get github.com/mattermost/gobom/cmd/gobom
+go install github.com/mattermost/gobom/cmd/gobom@latest
 ```
 
 ## Usage
